@@ -1,17 +1,19 @@
 run_on_thread(getactorthreads()[1], [==[
 
+-- get services
 local plrs = game:GetService("Players")
 local rs = game:GetService("RunService")
 local cg = game:GetService("CoreGui")
 
+-- main variables
 local lp = plrs.LocalPlayer
 local camera = workspace.CurrentCamera
 
+-- tables for caching esp objects
 local cache = {}
-local frameworkCache = {}
-local frameworkModels = {}
 local connections = {}
 
+-- config
 local uis = game:GetService("UserInputService")
 local mouse = lp:GetMouse()
 
@@ -22,11 +24,8 @@ local cframeWalkspeedEnabled = false
 local cframeSpeedValue = 0
 local flyEnabled = false
 local flySpeed = 50
-local clickTpEnabled = false
-local selectedPlayerName = ""
 local jumpPowerEnabled = false
 local jumpPowerValue = 50
-local playerDropdown
 local infiniteJumpEnabled = false
 local antiVoidEnabled = false
 
@@ -47,23 +46,9 @@ local espSkeletonsColor = Color3.fromRGB(255, 255, 255)
 local espTracersEnabled = true
 local espTracersThickness = 1
 local espTracersColor = Color3.fromRGB(255, 255, 255)
-local espFrameworkEnabled = false
 local espChamsEnabled = true
 local espChamsFillColor = Color3.fromRGB(255, 0, 0)
 local espChamsOutlineColor = Color3.fromRGB(255, 255, 255)
-
-local function getOtherPlayers()
-    local list = {}
-    for _, p in ipairs(plrs:GetPlayers()) do
-        if p ~= lp then
-            table.insert(list, p.Name)
-        end
-    end
-    if #list == 0 then
-        table.insert(list, "None")
-    end
-    return list
-end
 
 local fpsBoosterEnabled = false
 local originalProperties = {}
@@ -89,14 +74,11 @@ local function enableFpsBooster()
             desc.Enabled = false
         end
     end
-    pcall(function()
         game:GetService("Lighting").GlobalShadows = false
-    end)
 end
 
 local function disableFpsBooster()
     for obj, val in pairs(originalProperties) do
-        pcall(function()
             if obj:IsA("Decal") or obj:IsA("Texture") then
                 obj.Texture = val
             elseif obj:IsA("BasePart") then
@@ -105,50 +87,19 @@ local function disableFpsBooster()
             elseif obj:IsA("PostEffect") then
                 obj.Enabled = val
             end
-        end)
     end
-    pcall(function()
         game:GetService("Lighting").GlobalShadows = true
-    end)
     originalProperties = {}
 end
 
-local function serverHop()
-    local teleportService = game:GetService("TeleportService")
-    local httpService = game:GetService("HttpService")
-    local placeId = game.PlaceId
-    pcall(function()
-        local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
-        local response = game:HttpGet(url)
-        local data = httpService:JSONDecode(response)
-        local servers = data and data.data
-        if servers then
-            for _, server in ipairs(servers) do
-                if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                    teleportService:TeleportToPlaceInstance(placeId, server.id, lp)
-                    break
-                end
-            end
-        end
-    end)
-end
 
-local function rejoin()
-    local teleportService = game:GetService("TeleportService")
-    pcall(function()
-        if game.JobId ~= "" then
-            teleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, lp)
-        else
-            teleportService:Teleport(game.PlaceId, lp)
-        end
-    end)
-end
 
+-- loads rayfield ui library
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
     Name = "esp",
     LoadingTitle = "esp",
-    LoadingSubtitle = "by harry",
+    LoadingSubtitle = "may freze while loading",
     ConfigurationSaving = { Enabled = false },
     Discord = { Enabled = false },
     KeySystem = false
@@ -167,14 +118,6 @@ espTab:CreateToggle({
     end
 })
 
-espTab:CreateToggle({
-    Name = "framework games support",
-    CurrentValue = false,
-    Flag = "frameworkenabled",
-    Callback = function(v)
-        espFrameworkEnabled = v
-    end
-})
 
 espTab:CreateToggle({
     Name = "team check",
@@ -372,16 +315,11 @@ espTab:CreateColorPicker({
 })
 
 local movementTab
-pcall(function()
     movementTab = Window:CreateTab("movement", 4483362458)
-end)
 
 if movementTab then
-    pcall(function()
         movementTab:CreateSection("movement")
-    end)
 
-    pcall(function()
         movementTab:CreateToggle({
             Name = "custom walkspeed",
             CurrentValue = false,
@@ -397,9 +335,7 @@ if movementTab then
                 end
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateSlider({
             Name = "walkspeed value",
             Range = {16, 500},
@@ -411,9 +347,7 @@ if movementTab then
                 walkspeedValue = v
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateToggle({
             Name = "noclip",
             CurrentValue = false,
@@ -422,9 +356,7 @@ if movementTab then
                 noclipEnabled = v
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateToggle({
             Name = "cframe walkspeed",
             CurrentValue = false,
@@ -433,9 +365,7 @@ if movementTab then
                 cframeWalkspeedEnabled = v
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateSlider({
             Name = "cframe speed value",
             Range = {0, 100},
@@ -447,9 +377,7 @@ if movementTab then
                 cframeSpeedValue = v
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateToggle({
             Name = "fly",
             CurrentValue = false,
@@ -465,9 +393,7 @@ if movementTab then
                 end
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateSlider({
             Name = "fly speed",
             Range = {10, 500},
@@ -479,9 +405,7 @@ if movementTab then
                 flySpeed = v
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateToggle({
             Name = "custom jump power",
             CurrentValue = false,
@@ -497,9 +421,7 @@ if movementTab then
                 end
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateSlider({
             Name = "jump power",
             Range = {50, 500},
@@ -511,9 +433,7 @@ if movementTab then
                 jumpPowerValue = v
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateToggle({
             Name = "infinite jump",
             CurrentValue = false,
@@ -522,9 +442,7 @@ if movementTab then
                 infiniteJumpEnabled = v
             end
         })
-    end)
 
-    pcall(function()
         movementTab:CreateToggle({
             Name = "anti void",
             CurrentValue = false,
@@ -533,123 +451,27 @@ if movementTab then
                 antiVoidEnabled = v
             end
         })
-    end)
 
-    pcall(function()
-        movementTab:CreateSection("teleports")
-    end)
-
-    pcall(function()
-        movementTab:CreateToggle({
-            Name = "click tp",
-            CurrentValue = false,
-            Flag = "clicktpenabled",
-            Callback = function(v)
-                clickTpEnabled = v
-            end
-        })
-    end)
-
-    pcall(function()
-        playerDropdown = movementTab:CreateDropdown({
-            Name = "select player",
-            Options = getOtherPlayers(),
-            CurrentOption = {"None"},
-            Flag = "teleportplayerdropdown",
-            Callback = function(v)
-                if type(v) == "table" then
-                    selectedPlayerName = v[1]
-                else
-                    selectedPlayerName = v
-                end
-            end
-        })
-    end)
-
-    pcall(function()
-        movementTab:CreateButton({
-            Name = "refresh player list",
-            Callback = function()
-                pcall(function()
-                    if playerDropdown then
-                        playerDropdown:Refresh(getOtherPlayers(), true)
-                    end
-                end)
-            end
-        })
-    end)
-
-    pcall(function()
-        movementTab:CreateButton({
-            Name = "teleport to player",
-            Callback = function()
-                if selectedPlayerName ~= "" and selectedPlayerName ~= "None" then
-                    local target = plrs:FindFirstChild(selectedPlayerName)
-                    local targetChar = target and target.Character
-                    local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-                    local lpChar = lp.Character
-                    local lpRoot = lpChar and lpChar:FindFirstChild("HumanoidRootPart")
-                    if targetRoot and lpRoot then
-                        lpRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
-                    end
-                end
-            end
-        })
-    end)
 end
 
-local miscTab
-pcall(function()
-    miscTab = Window:CreateTab("misc", 4483362458)
-end)
+local miscTab = Window:CreateTab("misc", 4483362458)
+miscTab:CreateSection("performance")
 
-if miscTab then
-    pcall(function()
-        miscTab:CreateSection("performance")
-    end)
+miscTab:CreateToggle({
+    Name = "fps booster",
+    CurrentValue = false,
+    Flag = "fpsbooster",
+    Callback = function(v)
+        fpsBoosterEnabled = v
+        if v then
+            enableFpsBooster()
+        else
+            disableFpsBooster()
+        end
+    end
+})
 
-    pcall(function()
-        miscTab:CreateToggle({
-            Name = "fps booster",
-            CurrentValue = false,
-            Flag = "fpsbooster",
-            Callback = function(v)
-                fpsBoosterEnabled = v
-                if v then
-                    enableFpsBooster()
-                else
-                    disableFpsBooster()
-                end
-            end
-        })
-    end)
-
-    pcall(function()
-        statsLabel = miscTab:CreateLabel("FPS: 0 | Ping: 0 ms")
-    end)
-
-    pcall(function()
-        miscTab:CreateSection("servers")
-    end)
-
-    pcall(function()
-        miscTab:CreateButton({
-            Name = "server hopper",
-            Callback = function()
-                serverHop()
-            end
-        })
-    end)
-
-    pcall(function()
-        miscTab:CreateButton({
-            Name = "rejoin",
-            Callback = function()
-                rejoin()
-            end
-        })
-    end)
-end
+statsLabel = miscTab:CreateLabel("FPS: 0 | Ping: 0 ms")
 
 local R15_BONES = {
     {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"},
@@ -726,11 +548,9 @@ local function createEspElements(name)
         Container = folder
     }
     
-    pcall(function()
-        local hl = Instance.new("Highlight")
-        hl.Parent = cg
-        elements.Highlight = hl
-    end)
+    local hl = Instance.new("Highlight")
+    hl.Parent = cg
+    elements.Highlight = hl
 
     elements.BoxTop.BorderSizePixel = 0
     elements.BoxBottom.BorderSizePixel = 0
@@ -799,21 +619,7 @@ end))
 
 table.insert(connections, plrs.PlayerRemoving:Connect(removePlayerEsp))
 
-table.insert(connections, plrs.PlayerAdded:Connect(function(p)
-    pcall(function()
-        if playerDropdown then
-            playerDropdown:Refresh(getOtherPlayers(), true)
-        end
-    end)
-end))
 
-table.insert(connections, plrs.PlayerRemoving:Connect(function(p)
-    pcall(function()
-        if playerDropdown then
-            playerDropdown:Refresh(getOtherPlayers(), true)
-        end
-    end)
-end))
 
 table.insert(connections, rs.Stepped:Connect(function()
     if noclipEnabled and lp.Character then
@@ -840,14 +646,10 @@ table.insert(connections, rs.Heartbeat:Connect(function(dt)
         if antiVoidEnabled and root.Position.Y < -500 then
             root.CFrame = CFrame.new(root.Position.X, 100, root.Position.Z)
             local velocity = Vector3.new(0, 0, 0)
-            pcall(function()
-                root.AssemblyLinearVelocity = velocity
-                root.AssemblyAngularVelocity = velocity
-            end)
-            pcall(function()
-                root.Velocity = velocity
-                root.RotVelocity = velocity
-            end)
+            root.AssemblyLinearVelocity = velocity
+            root.AssemblyAngularVelocity = velocity
+            root.Velocity = velocity
+            root.RotVelocity = velocity
         end
         if cframeWalkspeedEnabled and hum.MoveDirection.Magnitude > 0 then
             local moveDirection = (hum.MoveDirection * Vector3.new(1, 0, 1)).Unit
@@ -859,14 +661,10 @@ table.insert(connections, rs.Heartbeat:Connect(function(dt)
         if flyEnabled then
             hum.PlatformStand = true
             local velocity = Vector3.new(0, 0, 0)
-            pcall(function()
-                root.AssemblyLinearVelocity = velocity
-                root.AssemblyAngularVelocity = velocity
-            end)
-            pcall(function()
-                root.Velocity = velocity
-                root.RotVelocity = velocity
-            end)
+            root.AssemblyLinearVelocity = velocity
+            root.AssemblyAngularVelocity = velocity
+            root.Velocity = velocity
+            root.RotVelocity = velocity
             local moveDir = Vector3.new(0, 0, 0)
             if uis:IsKeyDown(Enum.KeyCode.W) then
                 moveDir = moveDir + camera.CFrame.LookVector
@@ -893,11 +691,7 @@ table.insert(connections, rs.Heartbeat:Connect(function(dt)
     end
 end))
 
-table.insert(connections, mouse.Button1Down:Connect(function()
-    if clickTpEnabled and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-        lp.Character.HumanoidRootPart.CFrame = mouse.Hit + Vector3.new(0, 3, 0)
-    end
-end))
+
 
 table.insert(connections, uis.JumpRequest:Connect(function()
     if infiniteJumpEnabled and lp.Character then
@@ -914,6 +708,7 @@ local nextUpdate = 0
 local fpsCount = 0
 local pfBodyPartsCache = setmetatable({}, {__mode = "k"})
 
+-- main esp drawing function
 local function renderEsp(data, char, nameStr, currentHealth, maxH, isFriendly)
     local viewDim = camera.ViewportSize
     if not viewDim then return end
@@ -1147,112 +942,22 @@ local function renderEsp(data, char, nameStr, currentHealth, maxH, isFriendly)
         hidePlayerEsp(data)
     end
 end
-local pfGetEntry
-local lastPFSearch = 0
-
-local function getPhantomForcesCharacterModelRaw(player)
-    if not pfGetEntry then
-        local now = os.clock()
-        if now - lastPFSearch > 5 then
-            lastPFSearch = now
-            pcall(function()
-                    for _, v in pairs(getgc(true)) do
-                        if type(v) == "function" and debug.getinfo(v).name == "getEntry" then
-                            pfGetEntry = v
-                            break
-                        elseif type(v) == "table" and rawget(v, "getEntry") and type(rawget(v, "getEntry")) == "function" then
-                            pfGetEntry = rawget(v, "getEntry")
-                            break
-                        end
-                    end
-                end)
-            end
-        end
-    
-
-    if not pfGetEntry then return nil end
-    local success, entry = pcall(pfGetEntry, player)
-    if not success or not entry then
-        success, entry = pcall(pfGetEntry, player.Name)
-    end
-    
-    if success and entry and type(entry) == "table" then
-        local foundModel = nil
-        
-        local s2, tpo = pcall(function() return entry:getThirdPersonObject() end)
-        if s2 and tpo and type(tpo) == "table" then
-            local s3, hash = pcall(function() return tpo:getCharacterHash() end)
-            if s3 and hash and type(hash) == "table" then
-                local head = hash.Head or hash.head or hash.Torso or hash.torso
-                if head and typeof(head) == "Instance" and head:IsA("BasePart") and head.Parent then
-                    return head.Parent
-                end
-            end
-        end
-        
-        local visited = {}
-        local function search(t, depth)
-            if depth > 5 or foundModel then return end
-            if visited[t] then return end
-            visited[t] = true
-            for k, v in pairs(t) do
-                if typeof(v) == "Instance" then
-                    if v:IsA("BasePart") and (k == "Head" or k == "head" or v.Name == "Head" or k == "Torso" or v.Name == "Torso") then
-                        if v.Parent and v.Parent:IsA("Model") then
-                            foundModel = v.Parent
-                            return
-                        end
-                    end
-                elseif type(v) == "table" then
-                    search(v, depth + 1)
-                end
-            end
-        end
-        search(entry, 1)
-        
-        if foundModel then
-            return foundModel
-        end
-    end
-    return nil
-end
-
-local pfCharCache = {}
-local pfLastCache = {}
-
-local function getPhantomForcesCharacterModel(player)
-    local now = os.clock()
-    if pfCharCache[player] and pfLastCache[player] and (now - pfLastCache[player] < 1) then
-        if pfCharCache[player].Parent then
-            return pfCharCache[player]
-        end
-    end
-    
-    local char = getPhantomForcesCharacterModelRaw(player)
-    pfCharCache[player] = char
-    pfLastCache[player] = now
-    return char
-end
-
+-- update esp every frame
 rs.RenderStepped:Connect(function(dt)
-    pcall(function()
-        fpsSum = fpsSum + (1 / dt)
-        fpsTicks = fpsTicks + 1
-        local now = os.clock()
-        if now >= nextUpdate then
-            fpsCount = math.round(fpsSum / fpsTicks)
-            fpsSum = 0
-            fpsTicks = 0
-            nextUpdate = now + 1
-            local pingVal = 0
-            pcall(function()
-                pingVal = math.round(lp:GetNetworkPing() * 1000)
-            end)
-            if statsLabel then
-                statsLabel:Set(string.format("FPS: %d | Ping: %d ms", fpsCount, pingVal))
-            end
+    fpsSum = fpsSum + (1 / dt)
+    fpsTicks = fpsTicks + 1
+    local now = os.clock()
+    if now >= nextUpdate then
+        fpsCount = math.round(fpsSum / fpsTicks)
+        fpsSum = 0
+        fpsTicks = 0
+        nextUpdate = now + 1
+        local pingVal = 0
+        pingVal = math.round(lp:GetNetworkPing() * 1000)
+        if statsLabel then
+            statsLabel:Set(string.format("FPS: %d | Ping: %d ms", fpsCount, pingVal))
         end
-    end)
+    end
 
     camera = workspace.CurrentCamera
     if not camera then
@@ -1262,9 +967,6 @@ rs.RenderStepped:Connect(function(dt)
     if not espMasterEnabled then
         for _, data in pairs(cache) do 
             hidePlayerEsp(data) 
-        end
-        for _, data in pairs(frameworkCache) do
-            hidePlayerEsp(data)
         end
         return
     end
@@ -1276,13 +978,10 @@ rs.RenderStepped:Connect(function(dt)
     
     for player, data in pairs(cache) do
         local char = player.Character
-        if not char then
-            char = getPhantomForcesCharacterModel(player)
-        end
         
         local isFriendly = false
         if espTeamCheck then
-            local lpChar = lp.Character or getPhantomForcesCharacterModel(lp)
+            local lpChar = lp.Character
             if lp.Team and player.Team and lp.Team == player.Team then
                 isFriendly = true
             elseif lp.TeamColor and player.TeamColor and lp.TeamColor == player.TeamColor then
@@ -1303,167 +1002,8 @@ rs.RenderStepped:Connect(function(dt)
         renderEsp(data, char, nameStr, currentHealth, maxHealth, isFriendly)
     end
 
-    if espFrameworkEnabled and not pfGetEntry then
-        for model, _ in pairs(frameworkModels) do
-            if model.Parent then
-                local data = frameworkCache[model]
-                if data then
-                    local hum = model:FindFirstChildOfClass("Humanoid")
-                    local currentHealth = hum and hum.Health or 100
-                    local maxHealth = hum and (hum.MaxHealth > 0 and hum.MaxHealth or 100) or 100
-                    
-                    local isFriendly = false
-                    if espTeamCheck and model.Parent and model.Parent.Parent and model.Parent.Parent.Name == "Players" then
-                        for _, teamFolder in ipairs(model.Parent.Parent:GetChildren()) do
-                            if teamFolder:FindFirstChild(lp.Name) then
-                                isFriendly = (teamFolder == model.Parent)
-                                break
-                            end
-                        end
-                    end
-                    
-                    renderEsp(data, model, model.Name, currentHealth, maxHealth, isFriendly)
-                end
-            else
-                frameworkModels[model] = nil
-                if frameworkCache[model] then
-                    if frameworkCache[model].Container then
-                        frameworkCache[model].Container:Destroy()
-                    end
-                    frameworkCache[model] = nil
-                end
-            end
-        end
-    else
-        for _, data in pairs(frameworkCache) do
-            hidePlayerEsp(data)
-        end
-    end
 end)
 
-local function isValidFrameworkModel(obj)
-    if not obj or not obj.Parent then return false end
-    if obj.Name == "Workspace" or obj.Name == "Map" or obj.Name == "PlayerModel" then return false end
-    if obj == lp.Character then return false end
-    
-    if obj:IsA("Model") or obj:IsA("Folder") then
-        
-        if obj.Parent and obj.Parent.Parent and obj.Parent.Parent.Name == "Players" and obj.Parent.Parent.Parent == workspace then
-            return true
-        end
-        
-        if obj.Parent and (obj.Parent.Name == "Characters" or obj.Parent.Name == "SpawnedCharacters" or obj.Parent.Name == "Ignore") then
-            return true
-        end
-        
-        local isPlayerNamed = false
-        for _, p in ipairs(plrs:GetPlayers()) do
-            if p ~= lp and (p.Name == obj.Name or p.DisplayName == obj.Name) then
-                isPlayerNamed = true
-                break
-            end
-        end
 
-        if isPlayerNamed then
-            return true
-        end
-
-        local head = obj:FindFirstChild("Head", true) or obj:FindFirstChild("head", true)
-        local root = obj:FindFirstChild("HumanoidRootPart", true) or obj:FindFirstChild("Torso", true) or obj:FindFirstChild("UpperTorso", true)
-        if head and root then
-            for _, p in ipairs(plrs:GetPlayers()) do
-                if p.Character == obj then
-                    return false
-                end
-            end
-            return true
-        end
-        
-        local allParts = {}
-        local hasJoints = false
-        local hasAnim = obj:FindFirstChildOfClass("AnimationController") or obj:FindFirstChildOfClass("Humanoid")
-        
-        for _, desc in ipairs(obj:GetDescendants()) do
-            if desc:IsA("BasePart") then
-                table.insert(allParts, desc)
-            elseif desc:IsA("Motor6D") or desc:IsA("Bone") then
-                hasJoints = true
-            end
-        end
-        
-        local numParts = #allParts
-        if (hasJoints or hasAnim) and numParts >= 5 and numParts <= 150 then
-            local minX, minY, minZ = math.huge, math.huge, math.huge
-            local maxX, maxY, maxZ = -math.huge, -math.huge, -math.huge
-            for _, part in ipairs(allParts) do
-                local pos = part.Position
-                local sz = part.Size
-                minX = math.min(minX, pos.X - sz.X/2)
-                minY = math.min(minY, pos.Y - sz.Y/2)
-                minZ = math.min(minZ, pos.Z - sz.Z/2)
-                maxX = math.max(maxX, pos.X + sz.X/2)
-                maxY = math.max(maxY, pos.Y + sz.Y/2)
-                maxZ = math.max(maxZ, pos.Z + sz.Z/2)
-            end
-            
-            local sizeY = maxY - minY
-            local sizeX = maxX - minX
-            local sizeZ = maxZ - minZ
-            
-            if sizeY >= 2.5 and sizeY <= 7.5 and sizeX >= 1 and sizeX <= 4.5 and sizeZ >= 1 and sizeZ <= 4.5 then
-                for _, p in ipairs(plrs:GetPlayers()) do
-                    if p.Character == obj then
-                        return false
-                    end
-                end
-                return true
-            end
-        end
-    end
-    return false
-end
-
-local function addFrameworkModel(obj)
-    local target = obj
-    if target:IsA("BasePart") then
-        target = target.Parent
-    end
-    
-    if target and target.Parent and (target.Parent:IsA("Model") or target.Parent:IsA("Folder")) then
-        for _, p in ipairs(plrs:GetPlayers()) do
-            if p ~= lp and (p.Name == target.Parent.Name or p.DisplayName == target.Parent.Name) then
-                target = target.Parent
-                break
-            end
-        end
-    end
-
-    if isValidFrameworkModel(target) then
-        frameworkModels[target] = true
-        if not frameworkCache[target] then
-            frameworkCache[target] = createEspElements(target.Name)
-        end
-    end
-end
-
-for _, obj in ipairs(workspace:GetDescendants()) do
-    pcall(addFrameworkModel, obj)
-end
-
-table.insert(connections, workspace.DescendantAdded:Connect(function(obj)
-    pcall(addFrameworkModel, obj)
-end))
-
-table.insert(connections, workspace.DescendantRemoving:Connect(function(obj)
-    if frameworkModels[obj] then
-        frameworkModels[obj] = nil
-        if frameworkCache[obj] then
-            if frameworkCache[obj].Container then
-                frameworkCache[obj].Container:Destroy()
-            end
-            frameworkCache[obj] = nil
-        end
-    end
-end))
 
 ]==])
