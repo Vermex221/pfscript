@@ -944,16 +944,21 @@ local function renderEsp(data, char, nameStr, currentHealth, maxH, isFriendly)
 end
 -- update esp every frame
 rs.RenderStepped:Connect(function(dt)
-    fpsSum = fpsSum + (1 / dt)
-    fpsTicks = fpsTicks + 1
+    if dt > 0 then
+        fpsSum = fpsSum + (1 / dt)
+        fpsTicks = fpsTicks + 1
+    end
     local now = os.clock()
     if now >= nextUpdate then
-        fpsCount = math.round(fpsSum / fpsTicks)
+        fpsCount = fpsTicks > 0 and math.round(fpsSum / fpsTicks) or 0
         fpsSum = 0
         fpsTicks = 0
         nextUpdate = now + 1
         local pingVal = 0
-        pingVal = math.round(lp:GetNetworkPing() * 1000)
+        local success, ping = pcall(lp.GetNetworkPing, lp)
+        if success and type(ping) == "number" then
+            pingVal = math.round(ping * 1000)
+        end
         if statsLabel then
             statsLabel:Set(string.format("FPS: %d | Ping: %d ms", fpsCount, pingVal))
         end
