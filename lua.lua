@@ -1241,7 +1241,31 @@ local function setupHitListener()
         end))
     end
     
-    -- Method 3: Hook FireServer for remote events sending 'bullethit' arguments
+    -- Method 3: Phantom Forces specific network module hook via getgc (Bypasses Obfuscated Remotes)
+    if game.PlaceId == 292439477 and getgc then
+        task.spawn(function()
+            local success, gc = pcall(function() return getgc(true) end)
+            if success and type(gc) == "table" then
+                for _, v in pairs(gc) do
+                    if type(v) == "table" and rawget(v, "send") and type(rawget(v, "send")) == "function" then
+                        local oldSend = v.send
+                        v.send = function(self, ...)
+                            local args = {...}
+                            local arg1 = type(args[1]) == "string" and string.lower(args[1]) or ""
+                            
+                            if arg1:match("bullethit") or arg1:match("damage") or arg1 == "hit" then
+                                task.spawn(triggerHit)
+                            end
+                            
+                            return oldSend(self, ...)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+    
+    -- Method 4: Hook FireServer for remote events sending 'bullethit' arguments
     if hookmetamethod and getnamecallmethod then
         local oldNamecall
         oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
