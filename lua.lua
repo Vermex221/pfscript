@@ -1180,6 +1180,94 @@ table.insert(connections, RunService.RenderStepped:Connect(function()
     end
 end))
 
+-- Setup hit listener logic
+local hitsoundIds = {
+    ['Rust Headshot'] = "rbxassetid://1255040462",
+    ['Neverlose'] = "rbxassetid://6607204501",
+    ['Skeet'] = "rbxassetid://5633695679",
+    ['Bameware'] = "rbxassetid://3126938221"
+}
+
+local function triggerHit()
+    if Toggles.hitsound_enabled.Value then
+        local s = Instance.new("Sound")
+        s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
+        s.Volume = 1
+        s.Parent = workspace
+        s:Play()
+        game:GetService("Debris"):AddItem(s, 2)
+    end
+    if Toggles.hit_notify and Toggles.hit_notify.Value then
+        Library:Notify('Hit an enemy!', 2)
+    end
+end
+
+local function setupHitListener()
+    -- Method 1: Listen for RemoteEvents/BindableEvents with hit names
+    local eventsFolder = game:GetService("ReplicatedStorage")
+    local function listenToEvent(obj)
+        if obj:IsA("BindableEvent") then
+            table.insert(connections, obj.Event:Connect(function(...)
+                local args = {...}
+                local arg1 = type(args[1]) == "string" and string.lower(args[1]) or ""
+                if arg1:match("bullethit") or arg1:match("hitmarker") or arg1 == "hit" then
+                    triggerHit()
+                end
+            end))
+        elseif obj:IsA("RemoteEvent") then
+            table.insert(connections, obj.OnClientEvent:Connect(function(...)
+                local args = {...}
+                local arg1 = type(args[1]) == "string" and string.lower(args[1]) or ""
+                if arg1:match("bullethit") or arg1:match("hitmarker") or arg1 == "hit" then
+                    triggerHit()
+                end
+            end))
+        end
+    end
+    
+    for _, v in pairs(eventsFolder:GetDescendants()) do listenToEvent(v) end
+    table.insert(connections, eventsFolder.DescendantAdded:Connect(listenToEvent))
+    
+    -- Method 2: Listen for native Hitmarker GUIs being created (Fallback for obfuscated games)
+    local playerGui = lp:FindFirstChildOfClass("PlayerGui")
+    if playerGui then
+        table.insert(connections, playerGui.DescendantAdded:Connect(function(obj)
+            if obj:IsA("ImageLabel") or obj:IsA("Frame") or obj:IsA("Sound") then
+                local n = string.lower(obj.Name)
+                if n:match("hitmarker") or n == "hit" or n == "marker" or n:match("crosshairhit") then
+                    triggerHit()
+                end
+            end
+        end))
+    end
+    
+    -- Method 3: Hook FireServer for remote events sending 'bullethit' arguments
+    if hookmetamethod and getnamecallmethod then
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            
+            if tostring(method) == "FireServer" and typeof(self) == "Instance" then
+                local success, isRemote = pcall(function() return self.ClassName == "RemoteEvent" end)
+                if success and isRemote then
+                    local name = tostring(self.Name)
+                    local arg1 = type(args[1]) == "string" and args[1] or ""
+                    
+                    if string.lower(name):match("bullethit") or string.lower(arg1):match("bullethit") or string.lower(arg1):match("hitmarker") or string.lower(arg1) == "hit" then
+                        task.spawn(triggerHit)
+                    end
+                end
+            end
+            
+            if setnamecallmethod then setnamecallmethod(method) end
+            return oldNamecall(self, ...)
+        end)
+    end
+end
+
+task.spawn(setupHitListener)
+
 Library:OnUnload(function()
     for _, conn in ipairs(connections) do
         conn:Disconnect()
@@ -1211,95 +1299,5 @@ if getactorthreads and (run_on_thread or run_on_actor) then
         return
     end 
 end
-
--- Setup "bullethit" event listener for hit sounds and notifications
-local hitsoundIds = {
-    ['Rust Headshot'] = "rbxassetid://1255040462",
-    ['Neverlose'] = "rbxassetid://6607204501",
-    ['Skeet'] = "rbxassetid://5633695679",
-    ['Bameware'] = "rbxassetid://3126938221"
-}
-
-local function setupHitListener()
-    -- Look for Phantom Forces bullet hit events or general RemoteEvents/BindableEvents
-    local eventsFolder = game:GetService("ReplicatedStorage")
-    local function listenToEvent(obj)
-        if string.lower(obj.Name):match("bullethit") or string.lower(obj.Name):match("hitmarker") then
-            if obj:IsA("BindableEvent") then
-                table.insert(connections, obj.Event:Connect(function(...)
-                    if Toggles.hitsound_enabled.Value then
-                        local s = Instance.new("Sound")
-                        s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
-                        s.Volume = 1
-                        s.Parent = workspace
-                        s:Play()
-                        game:GetService("Debris"):AddItem(s, 2)
-                    end
-                    if Toggles.hit_notify and Toggles.hit_notify.Value then
-                        Library:Notify('Hit an enemy!', 2)
-                    end
-                end))
-            elseif obj:IsA("RemoteEvent") then
-                table.insert(connections, obj.OnClientEvent:Connect(function(...)
-                    if Toggles.hitsound_enabled.Value then
-                        local s = Instance.new("Sound")
-                        s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
-                        s.Volume = 1
-                        s.Parent = workspace
-                        s:Play()
-                        game:GetService("Debris"):AddItem(s, 2)
-                    end
-                    if Toggles.hit_notify and Toggles.hit_notify.Value then
-                        Library:Notify('Hit an enemy!', 2)
-                    end
-                end))
-            end
-        end
-    end
-    
-    for _, v in pairs(eventsFolder:GetDescendants()) do
-        listenToEvent(v)
-    end
-    table.insert(connections, eventsFolder.DescendantAdded:Connect(listenToEvent))
-    
-    -- Also hook FireServer for RemoteEvents named bullethit
-    -- Also hook FireServer for RemoteEvents named bullethit
-    if hookmetamethod and getnamecallmethod then
-        local oldNamecall
-        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            
-            if tostring(method) == "FireServer" and typeof(self) == "Instance" then
-                local success, isRemote = pcall(function() return self.ClassName == "RemoteEvent" end)
-                if success and isRemote then
-                    local name = tostring(self.Name)
-                    local arg1 = type(args[1]) == "string" and args[1] or ""
-                    
-                    if string.lower(name):match("bullethit") or string.lower(name):match("hit") or string.lower(arg1):match("bullethit") then
-                        task.spawn(function()
-                            if Toggles.hitsound_enabled.Value then
-                                local s = Instance.new("Sound")
-                                s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
-                                s.Volume = 1
-                                s.Parent = workspace
-                                s:Play()
-                                game:GetService("Debris"):AddItem(s, 2)
-                            end
-                            if Toggles.hit_notify and Toggles.hit_notify.Value then
-                                Library:Notify('Hit an enemy!', 2)
-                            end
-                        end)
-                    end
-                end
-            end
-            
-            if setnamecallmethod then setnamecallmethod(method) end
-            return oldNamecall(self, ...)
-        end)
-    end
-end
-
-task.spawn(setupHitListener)
 
 loadstring(universal_esp_code)()
