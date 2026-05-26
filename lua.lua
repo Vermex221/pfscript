@@ -1224,9 +1224,23 @@ local function setupHitListener()
     -- Look for Phantom Forces bullet hit events or general RemoteEvents/BindableEvents
     local eventsFolder = game:GetService("ReplicatedStorage")
     local function listenToEvent(obj)
-        if string.lower(obj.Name):match("bullethit") then
+        if string.lower(obj.Name):match("bullethit") or string.lower(obj.Name):match("hitmarker") then
             if obj:IsA("BindableEvent") then
                 table.insert(connections, obj.Event:Connect(function(...)
+                    if Toggles.hitsound_enabled.Value then
+                        local s = Instance.new("Sound")
+                        s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
+                        s.Volume = 1
+                        s.Parent = workspace
+                        s:Play()
+                        game:GetService("Debris"):AddItem(s, 2)
+                    end
+                    if Toggles.hit_notify and Toggles.hit_notify.Value then
+                        Library:Notify('Hit an enemy!', 2)
+                    end
+                end))
+            elseif obj:IsA("RemoteEvent") then
+                table.insert(connections, obj.OnClientEvent:Connect(function(...)
                     if Toggles.hitsound_enabled.Value then
                         local s = Instance.new("Sound")
                         s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
