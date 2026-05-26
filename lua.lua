@@ -1254,22 +1254,33 @@ local function setupHitListener()
         local oldNamecall
         oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
             local method = getnamecallmethod()
-            if tostring(method) == "FireServer" and typeof(self) == "Instance" and self:IsA("RemoteEvent") then
-                if string.lower(self.Name):match("bullethit") or string.lower(self.Name):match("hit") then
-                    task.spawn(function()
-                        if Toggles.hitsound_enabled.Value then
-                            local s = Instance.new("Sound")
-                            s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
-                            s.Volume = 1
-                            s.Parent = workspace
-                            s:Play()
-                            game:GetService("Debris"):AddItem(s, 2)
-                        end
-                        if Toggles.hit_notify and Toggles.hit_notify.Value then
-                            Library:Notify('Hit an enemy!', 2)
-                        end
-                    end)
+            local args = {...}
+            
+            if tostring(method) == "FireServer" and typeof(self) == "Instance" then
+                local success, isRemote = pcall(function() return self.ClassName == "RemoteEvent" end)
+                if success and isRemote then
+                    local name = tostring(self.Name)
+                    local arg1 = type(args[1]) == "string" and args[1] or ""
+                    
+                    if string.lower(name):match("bullethit") or string.lower(name):match("hit") or string.lower(arg1):match("bullethit") then
+                        task.spawn(function()
+                            if Toggles.hitsound_enabled.Value then
+                                local s = Instance.new("Sound")
+                                s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
+                                s.Volume = 1
+                                s.Parent = workspace
+                                s:Play()
+                                game:GetService("Debris"):AddItem(s, 2)
+                            end
+                            if Toggles.hit_notify and Toggles.hit_notify.Value then
+                                Library:Notify('Hit an enemy!', 2)
+                            end
+                        end)
+                    end
                 end
+            end
+            
+            if setnamecallmethod then setnamecallmethod(method) end
             return oldNamecall(self, ...)
         end)
     end
