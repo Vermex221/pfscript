@@ -1251,23 +1251,27 @@ local function setupHitListener()
             if success and type(gc) == "table" then
                 for _, v in pairs(gc) do
                     if type(v) == "table" and rawget(v, "send") and type(rawget(v, "send")) == "function" then
-                        local oldSend = v.send
-                        v.send = function(self, ...)
-                            local args = {...}
-                            local arg1 = type(args[1]) == "string" and string.lower(args[1]) or ""
-                            
-                            if Toggles.pf_logger and Toggles.pf_logger.Value then
-                                local out = {}
-                                for i, val in ipairs(args) do table.insert(out, tostring(val)) end
-                                print("[PF SPY]", table.concat(out, " | "))
+                        pcall(function()
+                            if setreadonly then setreadonly(v, false) end
+                            local oldSend = v.send
+                            v.send = function(self, ...)
+                                local args = {...}
+                                local arg1 = type(args[1]) == "string" and string.lower(args[1]) or ""
+                                
+                                if Toggles.pf_logger and Toggles.pf_logger.Value then
+                                    local out = {}
+                                    for i, val in ipairs(args) do table.insert(out, tostring(val)) end
+                                    print("[PF SPY]", table.concat(out, " | "))
+                                end
+                                
+                                if arg1:match("bullethit") or arg1:match("damage") or arg1 == "hit" then
+                                    task.spawn(triggerHit)
+                                end
+                                
+                                return oldSend(self, ...)
                             end
-                            
-                            if arg1:match("bullethit") or arg1:match("damage") or arg1 == "hit" then
-                                task.spawn(triggerHit)
-                            end
-                            
-                            return oldSend(self, ...)
-                        end
+                            if setreadonly then setreadonly(v, true) end
+                        end)
                     end
                 end
             end
