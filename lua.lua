@@ -71,10 +71,7 @@ local Tabs = {
 
 local PlayerMovementGroup = Tabs.Player:AddLeftGroupbox('Movement')
 PlayerMovementGroup:AddToggle('xJ9mP2vL', { Text = 'CFrame Walkspeed', Default = false }):AddKeyPicker('bK4rT8yZ', { Default = 'None', SyncToggleState = true, Mode = 'Toggle', Text = 'CFrame WS Key', NoUI = false })
-PlayerMovementGroup:AddSlider('wQ7nF5hX', { Text = 'Speed Amount', Default = 0.1, Min = 0.01, Max = 1, Rounding = 2, Suffix = ' studs/frame' })
-
-PlayerMovementGroup:AddToggle('pL2mR9cX', { Text = 'Actual WalkSpeed', Default = false }):AddKeyPicker('tY5vB1nQ', { Default = 'None', SyncToggleState = true, Mode = 'Toggle', Text = 'WalkSpeed Key', NoUI = false })
-PlayerMovementGroup:AddSlider('gH8jK3mZ', { Text = 'Actual Speed', Default = 16, Min = 10, Max = 50, Rounding = 0, Suffix = ' WS' })
+PlayerMovementGroup:AddSlider('wQ7nF5hX', { Text = 'Speed Amount', Default = 16, Min = 16, Max = 100, Rounding = 0, Suffix = ' WS' })
 
 local GlobalGroup = Tabs.Main:AddLeftGroupbox('Global Settings')
 GlobalGroup:AddToggle('esp_enabled', { Text = 'ESP Enabled', Default = false })
@@ -1050,21 +1047,11 @@ table.insert(connections, RunService.RenderStepped:Connect(function()
 
                 if moveVector.Magnitude > 0 then
                     moveVector = moveVector.Unit
-                    root.CFrame = root.CFrame + (moveVector * Options.wQ7nF5hX.Value)
+                    local addedSpeed = math.max(0, Options.wQ7nF5hX.Value - 16) / 60
+                    if addedSpeed > 0 then
+                        root.CFrame = root.CFrame + (moveVector * addedSpeed)
+                    end
                 end
-            end
-        end
-    end
-
-    if Toggles.pL2mR9cX.Value then
-        local _, activeChar = getUniversalRoot(lp, lp.Character)
-        if not activeChar and camera.CameraSubject and camera.CameraSubject.Parent then
-            activeChar = camera.CameraSubject.Parent
-        end
-        if activeChar then
-            local hum = activeChar:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then
-                hum.WalkSpeed = Options.gH8jK3mZ.Value
             end
         end
     end
