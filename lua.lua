@@ -70,8 +70,11 @@ local Tabs = {
 }
 
 local PlayerMovementGroup = Tabs.Player:AddLeftGroupbox('Movement')
-PlayerMovementGroup:AddToggle('cframe_ws_enabled', { Text = 'CFrame Walkspeed', Default = false }):AddKeyPicker('cframe_ws_key', { Default = 'None', SyncToggleState = true, Mode = 'Toggle', Text = 'CFrame WS Key', NoUI = false })
-PlayerMovementGroup:AddSlider('cframe_ws_speed', { Text = 'Speed Amount', Default = 1, Min = 0.1, Max = 10, Rounding = 1, Suffix = ' studs/frame' })
+PlayerMovementGroup:AddToggle('xJ9mP2vL', { Text = 'CFrame Walkspeed', Default = false }):AddKeyPicker('bK4rT8yZ', { Default = 'None', SyncToggleState = true, Mode = 'Toggle', Text = 'CFrame WS Key', NoUI = false })
+PlayerMovementGroup:AddSlider('wQ7nF5hX', { Text = 'Speed Amount', Default = 0.1, Min = 0.01, Max = 1, Rounding = 2, Suffix = ' studs/frame' })
+
+PlayerMovementGroup:AddToggle('pL2mR9cX', { Text = 'Actual WalkSpeed', Default = false }):AddKeyPicker('tY5vB1nQ', { Default = 'None', SyncToggleState = true, Mode = 'Toggle', Text = 'WalkSpeed Key', NoUI = false })
+PlayerMovementGroup:AddSlider('gH8jK3mZ', { Text = 'Actual Speed', Default = 16, Min = 10, Max = 50, Rounding = 0, Suffix = ' WS' })
 
 local GlobalGroup = Tabs.Main:AddLeftGroupbox('Global Settings')
 GlobalGroup:AddToggle('esp_enabled', { Text = 'ESP Enabled', Default = false })
@@ -1012,7 +1015,7 @@ table.insert(connections, RunService.RenderStepped:Connect(function()
         end
     end
 
-    if Toggles.cframe_ws_enabled.Value then
+    if Toggles.xJ9mP2vL.Value then
         local root, activeChar = getUniversalRoot(lp, lp.Character)
         
         if not root and camera.CameraSubject then
@@ -1047,8 +1050,21 @@ table.insert(connections, RunService.RenderStepped:Connect(function()
 
                 if moveVector.Magnitude > 0 then
                     moveVector = moveVector.Unit
-                    root.CFrame = root.CFrame + (moveVector * Options.cframe_ws_speed.Value)
+                    root.CFrame = root.CFrame + (moveVector * Options.wQ7nF5hX.Value)
                 end
+            end
+        end
+    end
+
+    if Toggles.pL2mR9cX.Value then
+        local _, activeChar = getUniversalRoot(lp, lp.Character)
+        if not activeChar and camera.CameraSubject and camera.CameraSubject.Parent then
+            activeChar = camera.CameraSubject.Parent
+        end
+        if activeChar then
+            local hum = activeChar:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
+                hum.WalkSpeed = Options.gH8jK3mZ.Value
             end
         end
     end
