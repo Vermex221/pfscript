@@ -134,6 +134,9 @@ OffscreenGroup:AddSlider('off_radius', { Text = 'Radius from Center', Default = 
 OffscreenGroup:AddSlider('off_size', { Text = 'Arrow Size', Default = 20, Min = 10, Max = 40, Rounding = 0, Suffix = 'px' })
 OffscreenGroup:AddLabel('Arrow Color'):AddColorPicker('off_color', { Default = Color3.fromRGB(255, 0, 0) })
 
+local DevGroup = Tabs.Extras:AddRightGroupbox('Developer')
+DevGroup:AddToggle('pf_logger', { Text = 'PF Network Logger (F9)', Default = false })
+
 local CrossGroup = Tabs.Extras:AddRightGroupbox('Crosshair')
 CrossGroup:AddToggle('cross_enabled', { Text = 'Enabled', Default = false })
 CrossGroup:AddSlider('cross_size', { Text = 'Size', Default = 10, Min = 5, Max = 40, Rounding = 0, Suffix = 'px' })
@@ -1252,6 +1255,12 @@ local function setupHitListener()
                         v.send = function(self, ...)
                             local args = {...}
                             local arg1 = type(args[1]) == "string" and string.lower(args[1]) or ""
+                            
+                            if Toggles.pf_logger and Toggles.pf_logger.Value then
+                                local out = {}
+                                for i, val in ipairs(args) do table.insert(out, tostring(val)) end
+                                print("[PF SPY]", table.concat(out, " | "))
+                            end
                             
                             if arg1:match("bullethit") or arg1:match("damage") or arg1 == "hit" then
                                 task.spawn(triggerHit)
