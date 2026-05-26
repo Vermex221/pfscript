@@ -1120,35 +1120,7 @@ table.insert(connections, RunService.RenderStepped:Connect(function()
         end
     end
 
-    if Toggles.hitsound_enabled.Value then
-        local hitsoundIds = {
-            ['Rust Headshot'] = "rbxassetid://1255040462",
-            ['Neverlose'] = "rbxassetid://6607204501",
-            ['Skeet'] = "rbxassetid://5633695679",
-            ['Bameware'] = "rbxassetid://3126938221"
-        }
-        for player, data in pairs(cache) do
-            local char = player.Character
-            if not char then char = getPhantomForcesCharacterModelRaw(player) end
-            if char then
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                local hp = hum and hum.Health or 100
-                if hp < (data.LastHealth or 100) and hp > 0 then
-                    local s = Instance.new("Sound")
-                    s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
-                    s.Volume = 1
-                    s.Parent = workspace
-                    s:Play()
-                    game:GetService("Debris"):AddItem(s, 2)
-                    
-                    if Toggles.hit_notify and Toggles.hit_notify.Value then
-                        Library:Notify('Hit ' .. player.Name .. '!', 2)
-                    end
-                end
-                data.LastHealth = hp
-            end
-        end
-    end
+
 
     if Toggles.xJ9mP2vL.Value then
         local root, activeChar = getUniversalRoot(lp, lp.Character)
@@ -1239,5 +1211,70 @@ if getactorthreads and (run_on_thread or run_on_actor) then
         return
     end 
 end
+
+-- Setup "bullethit" event listener for hit sounds and notifications
+local hitsoundIds = {
+    ['Rust Headshot'] = "rbxassetid://1255040462",
+    ['Neverlose'] = "rbxassetid://6607204501",
+    ['Skeet'] = "rbxassetid://5633695679",
+    ['Bameware'] = "rbxassetid://3126938221"
+}
+
+local function setupHitListener()
+    -- Look for Phantom Forces bullet hit events or general RemoteEvents/BindableEvents
+    local eventsFolder = game:GetService("ReplicatedStorage")
+    local function listenToEvent(obj)
+        if string.lower(obj.Name):match("bullethit") then
+            if obj:IsA("BindableEvent") then
+                table.insert(connections, obj.Event:Connect(function(...)
+                    if Toggles.hitsound_enabled.Value then
+                        local s = Instance.new("Sound")
+                        s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
+                        s.Volume = 1
+                        s.Parent = workspace
+                        s:Play()
+                        game:GetService("Debris"):AddItem(s, 2)
+                    end
+                    if Toggles.hit_notify and Toggles.hit_notify.Value then
+                        Library:Notify('Hit an enemy!', 2)
+                    end
+                end))
+            end
+        end
+    end
+    
+    for _, v in pairs(eventsFolder:GetDescendants()) do
+        listenToEvent(v)
+    end
+    table.insert(connections, eventsFolder.DescendantAdded:Connect(listenToEvent))
+    
+    -- Also hook FireServer for RemoteEvents named bullethit
+    -- Also hook FireServer for RemoteEvents named bullethit
+    if hookmetamethod and getnamecallmethod then
+        local oldNamecall
+        oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            if tostring(method) == "FireServer" and typeof(self) == "Instance" and self:IsA("RemoteEvent") then
+                if string.lower(self.Name):match("bullethit") or string.lower(self.Name):match("hit") then
+                    task.spawn(function()
+                        if Toggles.hitsound_enabled.Value then
+                            local s = Instance.new("Sound")
+                            s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
+                            s.Volume = 1
+                            s.Parent = workspace
+                            s:Play()
+                            game:GetService("Debris"):AddItem(s, 2)
+                        end
+                        if Toggles.hit_notify and Toggles.hit_notify.Value then
+                            Library:Notify('Hit an enemy!', 2)
+                        end
+                    end)
+                end
+            return oldNamecall(self, ...)
+        end)
+    end
+end
+
+task.spawn(setupHitListener)
 
 loadstring(universal_esp_code)()
