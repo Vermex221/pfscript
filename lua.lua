@@ -1284,7 +1284,7 @@ local function setupHitListener()
                                 task.spawn(triggerHit)
                             end
                                 
-                                return oldSend(self, ...)
+                                return oldSend(self, unpack(args))
                             end
                             if setreadonly then setreadonly(v, true) end
                         end)
