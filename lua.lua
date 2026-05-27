@@ -1010,6 +1010,23 @@ local function getClosestTarget()
 end
 
 table.insert(connections, RunService.RenderStepped:Connect(function()
+    if hitQueue > 0 then
+        for i = 1, hitQueue do
+            if Toggles.hitsound_enabled.Value then
+                local s = Instance.new("Sound")
+                s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
+                s.Volume = 1
+                s.Parent = workspace
+                s:Play()
+                game:GetService("Debris"):AddItem(s, 2)
+            end
+            if Toggles.hit_notify and Toggles.hit_notify.Value then
+                Library:Notify('Hit an enemy!', 2)
+            end
+        end
+        hitQueue = 0
+    end
+
     camera = workspace.CurrentCamera
     if not camera then return end
 
@@ -1194,18 +1211,9 @@ local hitsoundIds = {
     ['Bameware'] = "rbxassetid://3126938221"
 }
 
+local hitQueue = 0
 local function triggerHit()
-    if Toggles.hitsound_enabled.Value then
-        local s = Instance.new("Sound")
-        s.SoundId = hitsoundIds[Options.hitsound_sound.Value] or hitsoundIds['Rust Headshot']
-        s.Volume = 1
-        s.Parent = workspace
-        s:Play()
-        game:GetService("Debris"):AddItem(s, 2)
-    end
-    if Toggles.hit_notify and Toggles.hit_notify.Value then
-        Library:Notify('Hit an enemy!', 2)
-    end
+    hitQueue = hitQueue + 1
 end
 
 local function setupHitListener()
