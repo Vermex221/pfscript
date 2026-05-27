@@ -146,6 +146,7 @@ CrossGroup:AddLabel('Color'):AddColorPicker('cross_color', { Default = Color3.fr
 
 local AimbotGroup = Tabs.Aimbot:AddLeftGroupbox('Aimbot Settings')
 AimbotGroup:AddToggle('aimbot_enabled', { Text = 'Enabled', Default = false }):AddKeyPicker('aimbot_key', { Default = 'MB2', SyncToggleState = false, Mode = 'Hold', Text = 'Aimbot Activation Key', NoUI = false })
+AimbotGroup:AddToggle('silent_aim', { Text = 'Silent Aim (Magic Bullets)', Default = false })
 AimbotGroup:AddToggle('aimbot_teamcheck', { Text = 'Team Check', Default = false })
 AimbotGroup:AddToggle('aimbot_visiblecheck', { Text = 'Visible Check', Default = false })
 AimbotGroup:AddToggle('aimbot_show_fov', { Text = 'Show FOV', Default = false })
@@ -1266,9 +1267,22 @@ local function setupHitListener()
                                     end
                                 end
                                 
-                                if arg1:match("bullethit") or arg1:match("damage") or arg1 == "hit" then
-                                    task.spawn(triggerHit)
+                            if arg1 == "bullethit" then
+                                -- args[1] = "bullethit", args[2] = Damage Number, args[3] = PlayerName, args[4] = Position, args[5] = BodyPart
+                                -- Or args[1] = "bullethit", args[2] = PlayerName, args[3] = Position, args[4] = BodyPart
+                                
+                                -- MAGIC BULLETS / SILENT AIM: Rewrite the body part to "Head" to guarantee maximum damage
+                                if Toggles.silent_aim and Toggles.silent_aim.Value then
+                                    for i, v in ipairs(args) do
+                                        if type(v) == "string" and (v == "Torso" or v:match("Arm") or v:match("Leg") or v == "HumanoidRootPart") then
+                                            args[i] = "Head"
+                                        end
+                                    end
                                 end
+                                task.spawn(triggerHit)
+                            elseif arg1:match("damage") or arg1 == "hit" then
+                                task.spawn(triggerHit)
+                            end
                                 
                                 return oldSend(self, ...)
                             end
