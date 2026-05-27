@@ -145,7 +145,8 @@ CrossGroup:AddSlider('cross_thick', { Text = 'Thickness', Default = 2, Min = 1, 
 CrossGroup:AddLabel('Color'):AddColorPicker('cross_color', { Default = Color3.fromRGB(255, 255, 255) })
 
 local AimbotGroup = Tabs.Aimbot:AddLeftGroupbox('Aimbot Settings')
-AimbotGroup:AddToggle('aimbot_enabled', { Text = 'Enabled', Default = false }):AddKeyPicker('aimbot_key', { Default = 'MB2', SyncToggleState = false, Mode = 'Hold', Text = 'Aimbot Activation Key', NoUI = false })
+AimbotGroup:AddToggle('aimbot_enabled', { Text = 'Enabled', Default = false })
+Toggles.aimbot_enabled:AddKeyPicker('aimbot_key', { Default = 'MB2', SyncToggleState = false, Mode = 'Hold', Text = 'Aimbot Activation Key', NoUI = false })
 AimbotGroup:AddToggle('silent_aim', { Text = 'Silent Aim (Magic Bullets)', Default = false })
 AimbotGroup:AddToggle('aimbot_teamcheck', { Text = 'Team Check', Default = false })
 AimbotGroup:AddToggle('aimbot_visiblecheck', { Text = 'Visible Check', Default = false })
@@ -158,7 +159,8 @@ AimbotGroup:AddDropdown('aimbot_part', { Values = { 'Head', 'Torso', 'HumanoidRo
 AimbotGroup:AddLabel('FOV Color'):AddColorPicker('aimbot_fov_color', { Default = Color3.fromRGB(255, 255, 255) })
 
 local TriggerGroup = Tabs.Aimbot:AddRightGroupbox('Triggerbot')
-TriggerGroup:AddToggle('trigger_enabled', { Text = 'Enabled', Default = false }):AddKeyPicker('trigger_key', { Default = 'None', SyncToggleState = false, Mode = 'Hold', Text = 'Trigger Key', NoUI = false })
+TriggerGroup:AddToggle('trigger_enabled', { Text = 'Enabled', Default = false })
+Toggles.trigger_enabled:AddKeyPicker('trigger_key', { Default = 'None', SyncToggleState = false, Mode = 'Hold', Text = 'Trigger Key', NoUI = false })
 TriggerGroup:AddSlider('trigger_delay', { Text = 'Reaction Delay', Default = 0, Min = 0, Max = 500, Rounding = 0, Suffix = ' ms' })
 TriggerGroup:AddToggle('trigger_teamcheck', { Text = 'Team Check', Default = true })
 
