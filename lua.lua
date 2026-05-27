@@ -1259,7 +1259,7 @@ local function setupHitListener()
                                 local arg1 = type(args[1]) == "string" and string.lower(args[1]) or ""
                                 
                                 if Toggles.pf_logger and Toggles.pf_logger.Value then
-                                    if arg1 ~= "ping" and arg1 ~= "repupdate" and arg1 ~= "logmessage" and arg1 ~= "spot" then
+                                    if arg1:match("bullet") or arg1:match("hit") or arg1:match("damage") or arg1:match("kill") then
                                         local out = {}
                                         for i, val in ipairs(args) do table.insert(out, tostring(val)) end
                                         print("[PF SPY]", table.concat(out, " | "))
