@@ -1,16 +1,14 @@
-getgenv().key = "PFS-a8Xk2-Qm9Tz-Rv4Lp" 
-
 --[[ 
-    Universal esp & aimbot - @valorr19.
-    May not run well on low end devices.
-    Some features may not work on phantom forces due to their weird ass obfuscated workspace.
-    I worked really hard on this please dont skid it
-    Btw pf only works on potassium (bc it has run_on_thread)
+    PFSploit - Phantom Forces
+    @valorr19 
+
+    Notes:
+    - use potassium for run_on_thread or it wont work on PF (you can also use the fastflag method if your poor)
 
     TODO:
-    - Add visibility check caching for performance
-    - Optimize the renderStepped loop to reduce frame drops
-    - Improve smoothing curve for the aimbot
+    - Add bullet drop prediction
+    - Optimize the renderStepped loop
+    - Add weapon/ammo drops esp
 ]]
 
 local key = getgenv().key or ""
@@ -64,39 +62,76 @@ local Window = Library:CreateWindow({
 })
 
 local Tabs = {
-    Main = Window:AddTab('Main ESP'),
-    Extras = Window:AddTab('Extras'),
+    ESP = Window:AddTab('ESP'),
     Aimbot = Window:AddTab('Aimbot'),
-    Player = Window:AddTab('Player'),
-    ['Gun Mods'] = Window:AddTab('Gun Mods'),
+    Mods = Window:AddTab('Mods'),
+    Misc = Window:AddTab('Misc'),
     ['UI Settings'] = Window:AddTab('UI Settings')
 }
 
-local PlayerMovementGroup = Tabs.Player:AddLeftGroupbox('Movement')
-PlayerMovementGroup:AddToggle('xJ9mP2vL', { Text = 'CFrame Walkspeed', Default = false }):AddKeyPicker('bK4rT8yZ', { Default = 'None', SyncToggleState = true, Mode = 'Toggle', Text = 'CFrame WS Key', NoUI = false })
-PlayerMovementGroup:AddSlider('wQ7nF5hX', { Text = 'Speed Amount', Default = 16, Min = 16, Max = 100, Rounding = 0, Suffix = ' WS' })
+local PlayerMovementGroup = Tabs.Mods:AddLeftGroupbox('Movement')
+PlayerMovementGroup:AddToggle('speed_modifier_en', { Text = 'Speed Modifier', Default = false })
+PlayerMovementGroup:AddSlider('speed_modifier', { Text = 'Speed Modifier', Default = 15, Min = 15, Max = 250, Rounding = 0, Suffix = ' WS' })
+PlayerMovementGroup:AddToggle('xJ9mP2vL', { Text = 'Speed Bypass (CFrame)', Default = false }):AddKeyPicker('bK4rT8yZ', { Default = 'None', SyncToggleState = true, Mode = 'Toggle', Text = 'CFrame WS Key', NoUI = false })
+PlayerMovementGroup:AddSlider('wQ7nF5hX', { Text = 'Speed Amount (CFrame)', Default = 16, Min = 16, Max = 100, Rounding = 0, Suffix = ' WS' })
+PlayerMovementGroup:AddToggle('no_jump_cooldown', { Text = 'No Jump Cooldown', Default = false })
+PlayerMovementGroup:AddToggle('auto_jump', { Text = 'Auto Jump', Default = false })
+PlayerMovementGroup:AddToggle('no_fall_damage', { Text = 'No Fall Damage', Default = false })
 
-local GunModGroup = Tabs['Gun Mods']:AddLeftGroupbox('Gun Modifications')
+local GunModGroup = Tabs.Mods:AddRightGroupbox('Gun Modifications')
+GunModGroup:AddToggle('always_headshot', { Text = 'Always Headshot', Default = false })
 GunModGroup:AddToggle('no_recoil', { Text = 'No Recoil', Default = false })
+GunModGroup:AddToggle('gunmod_instantaim', { Text = 'Instant Aiming', Default = false }) -- kinda broken
+GunModGroup:AddToggle('gunmod_instantequip', { Text = 'Instant Equip', Default = false })
+GunModGroup:AddToggle('gunmod_instantreload', { Text = 'Instant Reload', Default = false })
+GunModGroup:AddToggle('gunmod_nosway', { Text = 'No Gun Sway (Breathing)', Default = false })
+GunModGroup:AddToggle('gunmod_nowalksway', { Text = 'No Walk Sway (Bobbing)', Default = false })
+GunModGroup:AddToggle('gunmod_fullauto', { Text = 'Force Full-Auto', Default = false })
+GunModGroup:AddToggle('gunmod_blackscope', { Text = 'Blackscope Bypass', Default = false })
 
-local GlobalGroup = Tabs.Main:AddLeftGroupbox('Global Settings')
+local HitModGroup = Tabs.Misc:AddLeftGroupbox('Hit Modifications')
+HitModGroup:AddToggle('hit_sound_enabled', { Text = 'Hit Sound', Default = false })
+HitModGroup:AddDropdown('hit_sound_type', { Values = { 'Bubble Pop', 'Rust', 'Oof', 'Minecraft', 'Custom' }, Default = 1, Multi = false, Text = 'Sound Type' })
+HitModGroup:AddInput('hit_sound_custom', { Default = '137273815815490', Numeric = false, Finished = true, Text = 'Custom ID', Placeholder = 'Sound ID' })
+HitModGroup:AddSlider('hit_sound_volume', { Text = 'Volume', Default = 1, Min = 0.1, Max = 5, Rounding = 1 })
+HitModGroup:AddDivider()
+HitModGroup:AddToggle('hit_notifications', { Text = 'Hit Notifications', Default = false })
+HitModGroup:AddInput('hit_notif_format', { Default = 'Hit {USERNAME} in the {BODYPART}', Numeric = false, Finished = true, Text = 'Notification Format', Placeholder = 'Format String' })
+
+local LightingGroup = Tabs.Misc:AddLeftGroupbox('Lighting')
+LightingGroup:AddToggle('lighting_cc', { Text = 'Color Correction', Default = false }):AddColorPicker('lighting_cc_color', { Default = Color3.fromRGB(255, 255, 255) })
+LightingGroup:AddToggle('lighting_exp_en', { Text = 'Exposure Enabled', Default = false })
+LightingGroup:AddSlider('lighting_exp', { Text = 'Exposure', Default = 0.3, Min = -5, Max = 5, Rounding = 1 })
+LightingGroup:AddSlider('lighting_sat', { Text = 'Saturation', Default = 0.2, Min = -1, Max = 1, Rounding = 2 })
+LightingGroup:AddSlider('lighting_con', { Text = 'Contrast', Default = 0.2, Min = 0, Max = 1, Rounding = 2 })
+LightingGroup:AddToggle('lighting_fog', { Text = 'Fog Modifier', Default = false }):AddColorPicker('lighting_fog_color', { Default = Color3.fromRGB(255, 255, 255) })
+LightingGroup:AddSlider('lighting_fog_start', { Text = 'Fog Start', Default = 10000, Min = 0, Max = 10000, Rounding = 0 })
+LightingGroup:AddSlider('lighting_fog_end', { Text = 'Fog End', Default = 10000, Min = 0, Max = 10000, Rounding = 0 })
+LightingGroup:AddToggle('lighting_world', { Text = 'World Color', Default = false }):AddColorPicker('lighting_world_color', { Default = Color3.fromRGB(255, 255, 255) })
+
+local ViewmodelGroup = Tabs.Misc:AddRightGroupbox('Viewmodel')
+ViewmodelGroup:AddToggle('vm_weap_en', { Text = 'Customize Weapon', Default = false }):AddColorPicker('vm_weap_color', { Default = Color3.fromRGB(255, 255, 255) })
+ViewmodelGroup:AddDropdown('vm_weap_mat', { Values = { 'ForceField', 'Neon', 'Plastic', 'Glass' }, Default = 1, Multi = false, Text = 'Custom Weapon Material' })
+ViewmodelGroup:AddToggle('vm_arms_en', { Text = 'Customize Arms', Default = false }):AddColorPicker('vm_arms_color', { Default = Color3.fromRGB(255, 255, 255) })
+ViewmodelGroup:AddDropdown('vm_arms_mat', { Values = { 'ForceField', 'Neon', 'Plastic', 'Glass' }, Default = 1, Multi = false, Text = 'Custom Arms Material' })
+ViewmodelGroup:AddSlider('vm_x', { Text = 'X', Default = 0, Min = -5, Max = 5, Rounding = 1 })
+ViewmodelGroup:AddSlider('vm_y', { Text = 'Y', Default = 0, Min = -5, Max = 5, Rounding = 1 })
+ViewmodelGroup:AddSlider('vm_z', { Text = 'Z', Default = 0, Min = -5, Max = 5, Rounding = 1 })
+
+local GlobalGroup = Tabs.ESP:AddLeftGroupbox('Global Settings')
 GlobalGroup:AddToggle('esp_enabled', { Text = 'ESP Enabled', Default = false })
 GlobalGroup:AddToggle('esp_teamcheck', { Text = 'Team Check', Default = false })
 GlobalGroup:AddToggle('esp_visiblecheck', { Text = 'Visible Check (Wallbang)', Default = false })
 GlobalGroup:AddToggle('esp_usedistlimit', { Text = 'Use Distance Limit', Default = false })
 GlobalGroup:AddSlider('esp_distlimit', { Text = 'Max Distance', Default = 1000, Min = 10, Max = 5000, Rounding = 0, Suffix = ' studs' })
 
-local DetailsGroup = Tabs.Main:AddLeftGroupbox('Player Details')
+local DetailsGroup = Tabs.ESP:AddLeftGroupbox('Player Details')
 DetailsGroup:AddToggle('name_enabled', { Text = 'Show Name', Default = false })
 DetailsGroup:AddToggle('dist_enabled', { Text = 'Show Distance', Default = false })
-DetailsGroup:AddToggle('tool_enabled', { Text = 'Show Tool/Weapon', Default = false })
 DetailsGroup:AddSlider('text_size', { Text = 'Text Size', Default = 14, Min = 10, Max = 24, Rounding = 0, Suffix = 'px' })
 DetailsGroup:AddLabel('Text Color'):AddColorPicker('text_color', { Default = Color3.fromRGB(255, 255, 255) })
-DetailsGroup:AddToggle('head_dot', { Text = 'Show Head Dot', Default = false })
-DetailsGroup:AddSlider('dot_size', { Text = 'Head Dot Size', Default = 4, Min = 2, Max = 10, Rounding = 0, Suffix = 'px' })
-DetailsGroup:AddLabel('Head Dot Color'):AddColorPicker('dot_color', { Default = Color3.fromRGB(255, 255, 255) })
 
-local BoxGroup = Tabs.Main:AddRightGroupbox('Box & Health')
+local BoxGroup = Tabs.ESP:AddLeftGroupbox('Box & Health')
 BoxGroup:AddDropdown('box_style', { Values = { '2D', 'Corner', '3D' }, Default = 1, Multi = false, Text = 'Box Style' })
 BoxGroup:AddToggle('box_enabled', { Text = 'Box Enabled', Default = false })
 BoxGroup:AddToggle('health_bar', { Text = 'Health Bar', Default = false })
@@ -105,29 +140,13 @@ BoxGroup:AddSlider('box_thickness', { Text = 'Box Thickness', Default = 1, Min =
 BoxGroup:AddLabel('Visible Color'):AddColorPicker('box_vis_color', { Default = Color3.fromRGB(0, 255, 0) })
 BoxGroup:AddLabel('Hidden Color'):AddColorPicker('box_color', { Default = Color3.fromRGB(255, 0, 0) })
 
-local TracerGroup = Tabs.Extras:AddLeftGroupbox('Tracers')
+local TracerGroup = Tabs.ESP:AddRightGroupbox('Tracers')
 TracerGroup:AddToggle('tracer_enabled', { Text = 'Enabled', Default = false })
 TracerGroup:AddDropdown('tracer_origin', { Values = { 'Bottom', 'Center', 'Mouse' }, Default = 1, Multi = false, Text = 'Tracer Origin' })
 TracerGroup:AddSlider('tracer_thickness', { Text = 'Thickness', Default = 1, Min = 1, Max = 5, Rounding = 0, Suffix = 'px' })
 TracerGroup:AddLabel('Tracer Color'):AddColorPicker('tracer_color', { Default = Color3.fromRGB(255, 255, 255) })
 
-local SightGroup = Tabs.Extras:AddLeftGroupbox('Look Tracers')
-SightGroup:AddToggle('look_enabled', { Text = 'Enabled', Default = false })
-SightGroup:AddSlider('look_length', { Text = 'Length', Default = 5, Min = 1, Max = 20, Rounding = 0, Suffix = ' studs' })
-SightGroup:AddLabel('Look Tracer Color'):AddColorPicker('look_color', { Default = Color3.fromRGB(255, 255, 255) })
-
-local OffscreenGroup = Tabs.Extras:AddRightGroupbox('Offscreen Indicators')
-OffscreenGroup:AddToggle('off_enabled', { Text = 'Enabled', Default = false })
-OffscreenGroup:AddSlider('off_radius', { Text = 'Radius from Center', Default = 150, Min = 50, Max = 500, Rounding = 0, Suffix = 'px' })
-OffscreenGroup:AddSlider('off_size', { Text = 'Arrow Size', Default = 20, Min = 10, Max = 40, Rounding = 0, Suffix = 'px' })
-OffscreenGroup:AddLabel('Arrow Color'):AddColorPicker('off_color', { Default = Color3.fromRGB(255, 0, 0) })
-
-local SkelGroup = Tabs.Extras:AddRightGroupbox('Skeletons')
-SkelGroup:AddToggle('skel_enabled', { Text = 'Enabled', Default = false })
-SkelGroup:AddSlider('skel_thickness', { Text = 'Thickness', Default = 1, Min = 1, Max = 5, Rounding = 0, Suffix = 'px' })
-SkelGroup:AddLabel('Skeleton Color'):AddColorPicker('skel_color', { Default = Color3.fromRGB(255, 255, 255) })
-
-local CrossGroup = Tabs.Extras:AddRightGroupbox('Crosshair')
+local CrossGroup = Tabs.ESP:AddRightGroupbox('Crosshair')
 CrossGroup:AddToggle('cross_enabled', { Text = 'Enabled', Default = false })
 CrossGroup:AddSlider('cross_size', { Text = 'Size', Default = 10, Min = 5, Max = 40, Rounding = 0, Suffix = 'px' })
 CrossGroup:AddSlider('cross_gap', { Text = 'Gap', Default = 5, Min = 0, Max = 20, Rounding = 0, Suffix = 'px' })
@@ -146,6 +165,18 @@ AimbotGroup:AddSlider('aimbot_mouse_sens', { Text = 'Mouse Sens Divider', Defaul
 AimbotGroup:AddDropdown('aimbot_part', { Values = { 'Head', 'Torso', 'HumanoidRootPart' }, Default = 1, Multi = false, Text = 'Aim Part' })
 AimbotGroup:AddLabel('FOV Color'):AddColorPicker('aimbot_fov_color', { Default = Color3.fromRGB(255, 255, 255) })
 
+local SilentAimGroup = Tabs.Aimbot:AddRightGroupbox('Silent Aim')
+SilentAimGroup:AddToggle('silent_aim', { Text = 'Enabled', Default = false })
+SilentAimGroup:AddToggle('silent_teamcheck', { Text = 'Team Check', Default = false })
+SilentAimGroup:AddToggle('silent_visiblecheck', { Text = 'Visible Check', Default = false })
+SilentAimGroup:AddToggle('silent_show_fov', { Text = 'Show FOV', Default = false })
+SilentAimGroup:AddDropdown('silent_origin', { Values = { 'Center', 'Mouse' }, Default = 1, Multi = false, Text = 'FOV Origin' })
+SilentAimGroup:AddDropdown('silent_part', { Values = { 'Head', 'Torso', 'Random' }, Default = 1, Multi = false, Text = 'Aim Part' })
+SilentAimGroup:AddSlider('silent_hitchance', { Text = 'Hit Chance', Default = 100, Min = 0, Max = 100, Rounding = 0, Suffix = '%' })
+SilentAimGroup:AddSlider('silent_fov', { Text = 'FOV Radius', Default = 150, Min = 10, Max = 1000, Rounding = 0, Suffix = 'px' })
+SilentAimGroup:AddLabel('FOV Color'):AddColorPicker('silent_fov_color', { Default = Color3.fromRGB(255, 0, 255) })
+
+
 -- watermark and fps/ping counter
 Library:SetWatermarkVisibility(true)
 local FrameTimer = tick()
@@ -153,6 +184,7 @@ local FrameCounter = 0;
 local FPS = 60;
 
 local WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(function()
+table.insert(connections, WatermarkConnection)
     FrameCounter += 1;
 
     if (tick() - FrameTimer) >= 1 then
@@ -192,6 +224,12 @@ local fovCircle = Drawing.new("Circle")
 fovCircle.Visible = false
 fovCircle.Thickness = 1
 fovCircle.Filled = false
+
+local silentFovCircle = Drawing.new("Circle")
+silentFovCircle.Visible = false
+silentFovCircle.Thickness = 1
+silentFovCircle.Filled = false
+
 
 local function renderCrosshair()
     if Toggles.cross_enabled.Value and camera.ViewportSize then
@@ -264,17 +302,21 @@ local function createEspElements(player)
     
     elements.HealthBg.Filled = true
     elements.HealthBg.Transparency = 1
+    elements.HealthBg.ZIndex = 1
     
     elements.HealthBar.Filled = true
     elements.HealthBar.Transparency = 1
+    elements.HealthBar.ZIndex = 2
     
     elements.HeadDot.Filled = true
     elements.HeadDot.Transparency = 1
+    elements.HeadDot.ZIndex = 3
     
     elements.HealthText.Center = true
     elements.HealthText.Outline = true
     elements.HealthText.Font = 2
     elements.HealthText.Size = 12
+    elements.HealthText.ZIndex = 3
     
     elements.NameLabel.Center = true
     elements.NameLabel.Outline = true
@@ -348,34 +390,67 @@ end))
 
 table.insert(connections, Players.PlayerRemoving:Connect(removePlayerEsp))
 
-local pfGetEntry
+local pfReplication = nil
+local pfGetEntry = nil
 local lastPFSearch = 0
 local pfCharCache = {}
 local pfLastCache = {}
 
 local function getPhantomForcesCharacterModelRaw(player)
-    if not pfGetEntry then
-        local now = os.clock()
-        if now - lastPFSearch > 5 then
-            lastPFSearch = now
-            local success, gc = pcall(getgc, true)
-            if success and gc then
-                for _, v in pairs(gc) do
-                    if type(v) == "function" and debug.getinfo(v).name == "getEntry" then
-                        pfGetEntry = v; break
-                    elseif type(v) == "table" and rawget(v, "getEntry") and type(rawget(v, "getEntry")) == "function" then
-                        pfGetEntry = rawget(v, "getEntry"); break
+    if not pfReplication then
+        pcall(function()
+            pfReplication = getrenv().shared.require("ReplicationInterface")
+        end)
+    end
+    
+    local entry = nil
+    local success = false
+    
+    if pfReplication then
+        if type(pfReplication.operateOnAllEntries) == "function" then
+            pcall(function()
+                pfReplication.operateOnAllEntries(function(p, e)
+                    if p == player then entry = e end
+                end)
+            end)
+        end
+        if not entry and type(pfReplication.getEntry) == "function" then
+            pcall(function() entry = pfReplication.getEntry(player) end)
+            if not entry then
+                pcall(function() entry = pfReplication.getEntry(player.Name) end)
+            end
+        end
+    end
+    
+    if not entry then
+        if not pfGetEntry then
+            local now = os.clock()
+            if now - lastPFSearch > 5 then
+                lastPFSearch = now
+                local s, gc = pcall(getgc, true)
+                if s and gc then
+                    for _, v in pairs(gc) do
+                        if type(v) == "function" and debug.getinfo(v).name == "getEntry" then
+                            pfGetEntry = v; break
+                        elseif type(v) == "table" and rawget(v, "getEntry") and type(rawget(v, "getEntry")) == "function" then
+                            pfGetEntry = rawget(v, "getEntry"); break
+                        end
                     end
                 end
             end
         end
+        if pfGetEntry then
+            local s, e = pcall(pfGetEntry, player)
+            entry = e
+            if not entry then
+                s, e = pcall(pfGetEntry, player.Name)
+                entry = e
+            end
+        end
     end
 
-    if not pfGetEntry then return nil end
-    local success, entry = pcall(pfGetEntry, player)
-    if not success or not entry then
-        success, entry = pcall(pfGetEntry, player.Name)
-    end
+    if not entry then return nil end
+    success = true
     
     if success and entry and type(entry) == "table" then
         local foundModel = nil
@@ -397,7 +472,7 @@ local function getPhantomForcesCharacterModelRaw(player)
             if s3 and hash and type(hash) == "table" then
                 local head = hash.Head or hash.head or hash.Torso or hash.torso
                 if head and typeof(head) == "Instance" and head:IsA("BasePart") and head.Parent then
-                    return head.Parent, hash
+                    return head.Parent, hash, entry
                 end
             end
         end
@@ -426,19 +501,22 @@ local function getPhantomForcesCharacterModelRaw(player)
         end
         search(entry, 1)
         if foundModel then
-            if workspace:FindFirstChild("Players") and not foundModel:IsDescendantOf(workspace.Players) then
-                return nil, nil
+            if foundModel.Parent == nil or string.find(tostring(foundModel.Parent), "DeadBody") then
+                return nil, nil, nil
             end
-            return foundModel, parts 
+            return foundModel, parts, entry
         end
     end
-    return nil, nil
+    return nil, nil, nil
 end
 
 local function getUniversalRoot(player, char)
     local pfParts = nil
-    if not char then char, pfParts = getPhantomForcesCharacterModelRaw(player) end
-    if not char then return nil end
+    local entry = nil
+    local rawChar
+    rawChar, pfParts, entry = getPhantomForcesCharacterModelRaw(player)
+    if not char then char = rawChar end
+    if not char then return nil, nil, nil end
     
     local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso") or char.PrimaryPart
     
@@ -463,7 +541,7 @@ local function getUniversalRoot(player, char)
         end
     end
     
-    return root, char
+    return root, char, entry
 end
 
 local function getTargetPart(char, aimPartName, pfParts)
@@ -494,7 +572,7 @@ local function renderEsp(data, player, char)
     local viewDim = camera.ViewportSize
     if not viewDim then return end
 
-    local root, activeChar = getUniversalRoot(player, char)
+    local root, activeChar, entry = getUniversalRoot(player, char)
     if not root or not activeChar then 
         hidePlayerEsp(data)
         return 
@@ -519,6 +597,35 @@ local function renderEsp(data, player, char)
     local hum = char:FindFirstChildOfClass("Humanoid")
     local currentHealth = hum and hum.Health or 100
     local maxHealth = hum and (hum.MaxHealth > 0 and hum.MaxHealth or 100) or 100
+    
+    if entry and type(entry) == "table" then
+        local gotHealth = false
+        if type(entry.getHealth) == "function" then
+            local s, hp, maxhp = pcall(entry.getHealth, entry)
+            if s and type(hp) == "number" then
+                currentHealth = hp
+                if type(maxhp) == "number" then maxHealth = maxhp end
+                gotHealth = true
+            end
+        end
+        
+        if not gotHealth then
+            local hs = entry._healthstate or entry.healthstate or entry.healthState or entry.HealthState
+            if type(hs) == "table" then
+                local hp = hs.health0 or hs.health or hs.Health or hs.Health0
+                local maxhp = hs.maxhealth or hs.MaxHealth or hs.maxHealth
+                if type(hp) == "number" then currentHealth = hp end
+                if type(maxhp) == "number" then maxHealth = maxhp end
+            else
+                local hp = entry.health0 or entry.health or entry.Health0 or entry.Health
+                local maxhp = entry.maxhealth or entry.MaxHealth or entry.maxHealth
+                if type(hp) == "number" then currentHealth = hp end
+                if type(maxhp) == "number" then maxHealth = maxhp end
+            end
+        end
+    end
+    
+    maxHealth = math.max(1, maxHealth)
     
     local isDead = hum and hum:GetState() == Enum.HumanoidStateType.Dead
     if isFriendly or isDead or currentHealth <= 0 then
@@ -659,18 +766,18 @@ local function renderEsp(data, player, char)
             end
         end
         
-        if hum and (Toggles.health_bar.Value or Toggles.health_text.Value) then
+        if (Toggles.health_bar.Value or Toggles.health_text.Value) then
             local healthPercent = math.clamp(currentHealth / maxHealth, 0, 1)
             local healthColor = Color3.fromRGB(255, 0, 0):Lerp(Color3.fromRGB(0, 255, 0), healthPercent)
             
             if Toggles.health_bar.Value then
-                data.HealthBg.Size = Vector2.new(3, boxHeight)
-                data.HealthBg.Position = Vector2.new(xOffset - 6, topY)
+                data.HealthBg.Size = Vector2.new(4, boxHeight)
+                data.HealthBg.Position = Vector2.new(xOffset - 7, topY)
                 data.HealthBg.Color = Color3.fromRGB(0, 0, 0)
                 data.HealthBg.Visible = true
 
-                data.HealthBar.Size = Vector2.new(1, boxHeight * healthPercent)
-                data.HealthBar.Position = Vector2.new(xOffset - 5, topY + (boxHeight * (1 - healthPercent)))
+                data.HealthBar.Size = Vector2.new(2, boxHeight * healthPercent)
+                data.HealthBar.Position = Vector2.new(xOffset - 6, topY + (boxHeight * (1 - healthPercent)))
                 data.HealthBar.Color = healthColor
                 data.HealthBar.Visible = true
             else
@@ -680,7 +787,7 @@ local function renderEsp(data, player, char)
 
             if Toggles.health_text.Value and healthPercent < 1.0 then
                 data.HealthText.Text = string.format("%d", math.floor(currentHealth))
-                data.HealthText.Position = Vector2.new(xOffset - 16, topY + (boxHeight * (1 - healthPercent)) - 6)
+                data.HealthText.Position = Vector2.new(xOffset - 22, topY + (boxHeight * (1 - healthPercent)) - 6)
                 data.HealthText.Color = healthColor
                 data.HealthText.Size = 12
                 data.HealthText.Visible = true
@@ -713,10 +820,10 @@ local function renderEsp(data, player, char)
             data.DistLabel.Visible = false
         end
         
-        if Toggles.tool_enabled.Value then
+        if Toggles.tool_enabled and Toggles.tool_enabled.Value then
             local tool = char:FindFirstChildOfClass("Tool")
             data.ToolLabel.Text = tool and tool.Name or "None"
-            local offset = Toggles.dist_enabled.Value and (textSize + 2) or 2
+            local offset = (Toggles.dist_enabled and Toggles.dist_enabled.Value) and (textSize + 2) or 2
             data.ToolLabel.Position = Vector2.new(screenPos.X, botY + offset)
             data.ToolLabel.Color = textColor
             data.ToolLabel.Size = textSize
@@ -747,12 +854,12 @@ local function renderEsp(data, player, char)
         end
 
         local head = char:FindFirstChild("Head") or char:FindFirstChild("head") or char:FindFirstChild("Head1") or root
-        if Toggles.head_dot.Value then
+        if Toggles.head_dot and Toggles.head_dot.Value then
             local hPos, hVis = camera:WorldToViewportPoint(head.Position)
             if hVis then
-                data.HeadDot.Radius = Options.dot_size.Value
+                data.HeadDot.Radius = (Options.dot_size and Options.dot_size.Value) or 2
                 data.HeadDot.Position = Vector2.new(hPos.X, hPos.Y)
-                data.HeadDot.Color = Options.dot_color.Value
+                data.HeadDot.Color = (Options.dot_color and Options.dot_color.Value) or Color3.fromRGB(255,0,0)
                 data.HeadDot.Visible = true
             else
                 data.HeadDot.Visible = false
@@ -761,15 +868,16 @@ local function renderEsp(data, player, char)
             data.HeadDot.Visible = false
         end
 
-        if Toggles.look_enabled.Value then
-            local lookPos = head.Position + (head.CFrame.LookVector * Options.look_length.Value)
+        if Toggles.look_enabled and Toggles.look_enabled.Value then
+            local length = (Options.look_length and Options.look_length.Value) or 5
+            local lookPos = head.Position + (head.CFrame.LookVector * length)
             local hPos, hVis = camera:WorldToViewportPoint(head.Position)
             local lPos, lVis = camera:WorldToViewportPoint(lookPos)
             
             if hVis and lVis then
                 data.LookTracer.From = Vector2.new(hPos.X, hPos.Y)
                 data.LookTracer.To = Vector2.new(lPos.X, lPos.Y)
-                data.LookTracer.Color = Options.look_color.Value
+                data.LookTracer.Color = (Options.look_color and Options.look_color.Value) or Color3.fromRGB(255,255,0)
                 data.LookTracer.Thickness = 1
                 data.LookTracer.Visible = true
             else
@@ -780,22 +888,30 @@ local function renderEsp(data, player, char)
         end
         
         for _, line in ipairs(data.Skeletons) do line.Visible = false end
-        if Toggles.skel_enabled.Value then
-            local activeBones = char:FindFirstChild("UpperTorso") and R15_BONES or R6_BONES
-            for idx, boneStructure in ipairs(activeBones) do
-                local partA = char:FindFirstChild(boneStructure[1]) or char:FindFirstChild(boneStructure[1], true)
-                local partB = char:FindFirstChild(boneStructure[2]) or char:FindFirstChild(boneStructure[2], true)
+        if Toggles.skeleton_esp and Toggles.skeleton_esp.Value then
+            local limbs = {
+                { "Head", "UpperTorso" }, { "UpperTorso", "LowerTorso" },
+                { "UpperTorso", "LeftUpperArm" }, { "LeftUpperArm", "LeftLowerArm" }, { "LeftLowerArm", "LeftHand" },
+                { "UpperTorso", "RightUpperArm" }, { "RightUpperArm", "RightLowerArm" }, { "RightLowerArm", "RightHand" },
+                { "LowerTorso", "LeftUpperLeg" }, { "LeftUpperLeg", "LeftLowerLeg" }, { "LeftLowerLeg", "LeftFoot" },
+                { "LowerTorso", "RightUpperLeg" }, { "RightUpperLeg", "RightLowerLeg" }, { "RightLowerLeg", "RightFoot" }
+            }
+            
+            for i, connection in ipairs(limbs) do
+                local partA = char:FindFirstChild(connection[1])
+                local partB = char:FindFirstChild(connection[2])
+                local line = data.Skeletons[i]
                 
-                if partA and partB and partA:IsA("BasePart") and partB:IsA("BasePart") then
-                    local posA, visualA = camera:WorldToViewportPoint(partA.Position)
-                    local posB, visualB = camera:WorldToViewportPoint(partB.Position)
-                    if visualA and visualB then
-                        local line = data.Skeletons[idx]
+                if partA and partB then
+                    local posA, visA = camera:WorldToViewportPoint(partA.Position)
+                    local posB, visB = camera:WorldToViewportPoint(partB.Position)
+                    
+                    if visA and visB then
                         if line then
                             line.From = Vector2.new(posA.X, posA.Y)
                             line.To = Vector2.new(posB.X, posB.Y)
-                            line.Color = Options.skel_color.Value
-                            line.Thickness = Options.skel_thickness.Value
+                            line.Color = (Options.skel_color and Options.skel_color.Value) or Color3.fromRGB(255,255,255)
+                            line.Thickness = (Options.skel_thickness and Options.skel_thickness.Value) or 1
                             line.Visible = true
                         end
                     end
@@ -806,7 +922,7 @@ local function renderEsp(data, player, char)
     else
         hidePlayerEsp(data)
         
-        if Toggles.off_enabled.Value then
+        if Toggles.off_enabled and Toggles.off_enabled.Value then
             data.OffArrow.Visible = true
             local cameraCFrame = camera.CFrame
             local dir = (rootPos - cameraCFrame.Position).Unit
@@ -820,38 +936,43 @@ local function renderEsp(data, player, char)
             
             local angle = math.atan2(y, x)
             local center = Vector2.new(viewDim.X / 2, viewDim.Y / 2)
-            local radius = Options.off_radius.Value
+            local radius = (Options.off_radius and Options.off_radius.Value) or 100
             
             local arrowPos = center + Vector2.new(math.cos(angle), -math.sin(angle)) * radius
             
             data.OffArrow.Position = Vector2.new(arrowPos.X, arrowPos.Y)
             data.OffArrow.Text = "▲"
-            data.OffArrow.Color = Options.off_color.Value
-            data.OffArrow.Size = Options.off_size.Value
+            data.OffArrow.Color = (Options.off_color and Options.off_color.Value) or Color3.fromRGB(255,255,255)
+            data.OffArrow.Size = (Options.off_size and Options.off_size.Value) or 25
         end
     end
 end
 
-local function getClosestTarget()
+local function getBestTarget(fovRadius, fovOrigin, forcePart, teamCheck, visCheck)
     local closestPlayer = nil
-    local shortestDistance = Options.aimbot_fov.Value
-    local aimPartName = Options.aimbot_part.Value
+    local shortestDistance = fovRadius or Options.aimbot_fov.Value
+    local aimPartName = forcePart or Options.aimbot_part.Value
 
-    local originPos
-    if Options.aimbot_origin.Value == 'Center' then
-        local viewDim = camera.ViewportSize
-        originPos = Vector2.new(viewDim.X / 2, viewDim.Y / 2)
-    else
-        local mLoc = UserInputService:GetMouseLocation()
-        originPos = Vector2.new(mLoc.X, mLoc.Y)
+    local originPos = fovOrigin
+    if not originPos then
+        if Options.aimbot_origin.Value == 'Center' then
+            local viewDim = camera.ViewportSize
+            originPos = Vector2.new(viewDim.X / 2, viewDim.Y / 2)
+        else
+            local mLoc = UserInputService:GetMouseLocation()
+            originPos = Vector2.new(mLoc.X, mLoc.Y)
+        end
     end
+    
+    if teamCheck == nil then teamCheck = Toggles.aimbot_teamcheck.Value end
+    if visCheck == nil then visCheck = Toggles.aimbot_visiblecheck.Value end
 
     local _, lpActiveChar = getUniversalRoot(lp, lp.Character)
 
     for _, targetPlayer in pairs(Players:GetPlayers()) do
         if targetPlayer ~= lp then
             local isFriendly = false
-            if Toggles.aimbot_teamcheck.Value then
+            if teamCheck then
                 if lp.Team and targetPlayer.Team and lp.Team == targetPlayer.Team then
                     isFriendly = true
                 elseif lp.TeamColor and targetPlayer.TeamColor and lp.TeamColor == targetPlayer.TeamColor then
@@ -882,7 +1003,7 @@ local function getClosestTarget()
                                 local distance = (originPos - Vector2.new(vector.X, vector.Y)).Magnitude
                                 if distance < shortestDistance then
                                     local isVisible = true
-                                    if Toggles.aimbot_visiblecheck.Value then
+                                    if visCheck then
                                         local rayParams = RaycastParams.new()
                                         rayParams.FilterType = Enum.RaycastFilterType.Exclude
                                         local ignoreList = {camera}
@@ -926,7 +1047,7 @@ local function getClosestTarget()
                                         local distance = (originPos - Vector2.new(vector.X, vector.Y)).Magnitude
                                         if distance < shortestDistance then
                                             local isVisible = true
-                                            if Toggles.aimbot_visiblecheck.Value then
+                                            if visCheck then
                                                 local rayParams = RaycastParams.new()
                                                 rayParams.FilterType = Enum.RaycastFilterType.Exclude
                                                 local ignoreList = {camera}
@@ -942,7 +1063,12 @@ local function getClosestTarget()
                                             end
 
                                             if isVisible then
-                                                closestPlayer = { Character = char, Mock = true }
+                                                local realPlayer = game:GetService("Players"):FindFirstChild(char.Name)
+                                                if realPlayer then
+                                                    closestPlayer = realPlayer
+                                                else
+                                                    closestPlayer = { Character = char, Mock = true }
+                                                end
                                                 shortestDistance = distance
                                             end
                                         end
@@ -979,13 +1105,29 @@ table.insert(connections, RunService.RenderStepped:Connect(function()
     else
         fovCircle.Visible = false
     end
+    
+    if Toggles.silent_show_fov and Toggles.silent_show_fov.Value then
+        silentFovCircle.Visible = true
+        silentFovCircle.Radius = Options.silent_fov.Value
+        silentFovCircle.Color = Options.silent_fov_color.Value
+        if Options.silent_origin.Value == 'Center' then
+            local viewDim = camera.ViewportSize
+            silentFovCircle.Position = Vector2.new(viewDim.X / 2, viewDim.Y / 2)
+        else
+            local mLoc = UserInputService:GetMouseLocation()
+            silentFovCircle.Position = Vector2.new(mLoc.X, mLoc.Y)
+        end
+    else
+        if silentFovCircle then silentFovCircle.Visible = false end
+    end
+
 
     if Toggles.aimbot_enabled.Value and Options.aimbot_key:GetState() then
-        local closestTarget = getClosestTarget()
-        if closestTarget then
-            local char = closestTarget.Character
+        local target = getBestTarget()
+        if target then
+            local char = target.Character or target
             local pfParts = nil
-            if not char then char, pfParts = getPhantomForcesCharacterModelRaw(closestTarget) end
+            if not target.Character then char, pfParts = getPhantomForcesCharacterModelRaw(target) end
             
             if char then
                 local aimPartName = Options.aimbot_part.Value
@@ -1062,6 +1204,89 @@ table.insert(connections, RunService.RenderStepped:Connect(function()
         end
     end
 
+    pcall(function()
+        local Lighting = game:GetService("Lighting")
+        if Toggles.lighting_cc.Value then
+            local cc = Lighting:FindFirstChild("PFSploit_CC")
+            if not cc then
+                cc = Instance.new("ColorCorrectionEffect")
+                cc.Name = "PFSploit_CC"
+                cc.Parent = Lighting
+            end
+            cc.Enabled = true
+            cc.TintColor = Options.lighting_cc_color.Value
+            cc.Saturation = Options.lighting_sat.Value
+            cc.Contrast = Options.lighting_con.Value
+        else
+            local cc = Lighting:FindFirstChild("PFSploit_CC")
+            if cc then cc.Enabled = false end
+        end
+
+        if Toggles.lighting_exp_en.Value then
+            Lighting.ExposureCompensation = Options.lighting_exp.Value
+        end
+
+        if Toggles.lighting_fog.Value then
+            Lighting.FogColor = Options.lighting_fog_color.Value
+            Lighting.FogStart = Options.lighting_fog_start.Value
+            Lighting.FogEnd = Options.lighting_fog_end.Value
+            local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+            if atmo then atmo.Density = 0 end 
+        else
+            local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+            if atmo then atmo.Density = 0.3 end
+        end
+
+        if Toggles.lighting_world.Value then
+            Lighting.Ambient = Options.lighting_world_color.Value
+            Lighting.OutdoorAmbient = Options.lighting_world_color.Value
+        end
+
+        local function applyMaterialAndColor(model, useColor, colorVal, useMat, matVal)
+            if not model then return end
+            for _, v in pairs(model:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    if useColor and typeof(colorVal) == "Color3" then
+                        pcall(function() 
+                            if v.Color ~= colorVal then v.Color = colorVal end 
+                        end)
+                    end
+                    if useMat and type(matVal) == "string" then
+                        pcall(function() 
+                            local targetMat = Enum.Material[matVal]
+                            if v.Material ~= targetMat then v.Material = targetMat end 
+                        end)
+                    end
+                end
+            end
+        end
+
+        for _, v in pairs(camera:GetChildren()) do
+            if v:IsA("Model") and v.Name ~= "Map" and not v:FindFirstChildOfClass("Humanoid") then
+                local isArm = false
+                local isWeapon = false
+                for _, p in pairs(v:GetChildren()) do
+                    local nameLow = string.lower(p.Name)
+                    if string.find(nameLow, "arm") then
+                        isArm = true
+                    elseif string.find(nameLow, "barrel") or string.find(nameLow, "sight") or string.find(nameLow, "handle") or string.find(nameLow, "main") then
+                        isWeapon = true
+                    end
+                end
+                
+                if isArm then
+                    if Toggles.vm_arms_en.Value then
+                        applyMaterialAndColor(v, true, Options.vm_arms_color.Value, true, Options.vm_arms_mat.Value)
+                    end
+                elseif isWeapon or v.Name == "Weapon" then
+                    if Toggles.vm_weap_en.Value then
+                        applyMaterialAndColor(v, true, Options.vm_weap_color.Value, true, Options.vm_weap_mat.Value)
+                    end
+                end
+            end
+        end
+    end)
+
     if not Toggles.esp_enabled.Value then
         for _, data in pairs(cache) do hidePlayerEsp(data) end
         return
@@ -1084,30 +1309,208 @@ Library:OnUnload(function()
         removePlayerEsp(player)
     end
     fovCircle:Remove()
+    if silentFovCircle then silentFovCircle:Remove() end
+
+
     for _, line in pairs(crosshairLines) do
         line:Remove()
+    end
+    
+    if _G.OriginalHooks then
+        for parent, funcs in pairs(_G.OriginalHooks) do
+            for funcName, origFunc in pairs(funcs) do
+                pcall(function()
+                    if setreadonly then pcall(setreadonly, parent, false) end
+                    parent[funcName] = origFunc
+                end)
+            end
+        end
+        _G.OriginalHooks = {}
     end
 end)
 
 local function setupModuleHooks()
     if game.PlaceId ~= 292439477 then return end
 
-    local FirearmObject, CharacterObject, CharacterConfig
+    local FirearmObject, network, BulletInterface, ReplicationInterface, PublicSettings, CharacterObject, MeleeObject
     local success, gc = pcall(getgc, true)
     if success and gc then
         for _, v in pairs(gc) do
             if type(v) == "table" then
                 if rawget(v, "getWeaponStat") and type(rawget(v, "getWeaponStat")) == "function" then
-                    FirearmObject = v
+                    if rawget(v, "computeGunSway") then
+                        FirearmObject = v
+                    elseif rawget(v, "meleeSway") then
+                        MeleeObject = v
+                    end
+                end
+                if rawget(v, "send") and rawget(v, "getTime") and type(rawget(v, "send")) == "function" then
+                    network = v
+                end
+                if rawget(v, "stepRender") and rawget(v, "setColor") and type(rawget(v, "new")) == "function" then
+                    BulletInterface = v
+                end
+                if rawget(v, "getEntry") and type(rawget(v, "getEntry")) == "function" then
+                    ReplicationInterface = v
+                end
+                if rawget(v, "bulletAcceleration") then
+                    PublicSettings = v
+                end
+                if rawget(v, "getWalkValues") and rawget(v, "takeStamina") then
+                    CharacterObject = v
                 end
             end
         end
     end
 
-    if FirearmObject then
+    local StarterGui = game:GetService("StarterGui")
 
-        if rawget(FirearmObject, "step") then
-            local oldStep = FirearmObject.step
+    local dot = Vector3.zero.Dot
+    local zero = Vector3.zero
+    local function trajectory(o, a, t, s, e)
+        local f = -a
+        local ld = t - o
+        local a_val = dot(f, f)
+        if a_val < 0.0001 then
+            local t_time = ld.Magnitude / s
+            return (ld / t_time) + (e or zero), t_time
+        end
+        local b = 4 * dot(ld, ld)
+        local k = (4 * (dot(f, ld) + s * s)) / (2 * a_val)
+        local v = (k * k - b / a_val) ^ 0.5
+        local t_time, t0 = k - v, k + v
+        t_time = t_time < 0 and t0 or t_time; t_time = t_time ^ 0.5
+        return f * t_time / 2 + (e or zero) + ld / t_time, t_time
+    end
+    
+    local silentTargetCache = nil
+    local silentTargetEntryCache = nil
+    local silentWeaponSpeedCache = 3000
+    
+    local bubbleHitSound = Instance.new("Sound")
+    bubbleHitSound.Parent = game:GetService("SoundService")
+
+    _G.OriginalHooks = _G.OriginalHooks or {}
+
+    local function cacheHook(parent, funcName)
+        if parent and rawget(parent, funcName) and type(parent[funcName]) == "function" then
+            _G.OriginalHooks[parent] = _G.OriginalHooks[parent] or {}
+            _G.OriginalHooks[parent][funcName] = _G.OriginalHooks[parent][funcName] or parent[funcName]
+            return _G.OriginalHooks[parent][funcName]
+        end
+        return nil
+    end
+
+    if FirearmObject then
+        local orig_computeGunSway = cacheHook(FirearmObject, "computeGunSway")
+        if orig_computeGunSway then
+            FirearmObject.computeGunSway = function(self, ...)
+                if Toggles.gunmod_nosway and Toggles.gunmod_nosway.Value then
+                    return CFrame.new()
+                end
+                return orig_computeGunSway(self, ...)
+            end
+        end
+
+        local orig_computeWalkSway = cacheHook(FirearmObject, "computeWalkSway")
+        if orig_computeWalkSway then
+            FirearmObject.computeWalkSway = function(self, ...)
+                if Toggles.gunmod_nowalksway and Toggles.gunmod_nowalksway.Value then
+                    return CFrame.new()
+                end
+                return orig_computeWalkSway(self, ...)
+            end
+        end
+        
+        local orig_getWeaponStat = cacheHook(FirearmObject, "getWeaponStat")
+        if orig_getWeaponStat then
+            FirearmObject.getWeaponStat = function(self, statName, ...)
+                if statName == "equiptime" and Toggles.gunmod_instantequip and Toggles.gunmod_instantequip.Value then
+                    return 0.01
+                elseif (statName == "aimspeed" or statName == "unaimspeed") and Toggles.gunmod_instantaim and Toggles.gunmod_instantaim.Value then
+                    return 100
+                elseif (statName == "equipspeed" or statName == "unequipspeed") and Toggles.gunmod_instantequip and Toggles.gunmod_instantequip.Value then
+                    return 100
+                elseif Toggles.gunmod_instantreload and Toggles.gunmod_instantreload.Value then
+                    local lowerStat = string.lower(statName)
+                    if string.find(lowerStat, "reload") and string.find(lowerStat, "speed") then
+                        return 100
+                    elseif string.find(lowerStat, "reload") and string.find(lowerStat, "time") then
+                        return 0
+                    end
+                elseif statName == "mainoffset" then
+                    local origOffset = orig_getWeaponStat(self, statName, ...)
+                    local success, result = pcall(function()
+                        if Options.vm_x and Options.vm_y and Options.vm_z and typeof(origOffset) == "CFrame" then
+                            return origOffset * CFrame.new(Options.vm_x.Value, Options.vm_y.Value, Options.vm_z.Value)
+                        end
+                        return origOffset
+                    end)
+                    if success and result then return result end
+                    return origOffset
+                end
+                return orig_getWeaponStat(self, statName, ...)
+            end
+        end
+
+        local orig_getAnimLength = cacheHook(FirearmObject, "getAnimLength")
+        if orig_getAnimLength then
+            FirearmObject.getAnimLength = function(self, animName, ...)
+                if Toggles.gunmod_instantreload and Toggles.gunmod_instantreload.Value and type(animName) == "string" then
+                    if string.find(string.lower(animName), "reload") then
+                        return 0.01
+                    end
+                end
+                return orig_getAnimLength(self, animName, ...)
+            end
+        end
+
+        local orig_popReloadSequence = cacheHook(FirearmObject, "popReloadSequence")
+        if orig_popReloadSequence then
+            FirearmObject.popReloadSequence = function(self, ...)
+                local ret = orig_popReloadSequence(self, ...)
+                if Toggles.gunmod_instantreload and Toggles.gunmod_instantreload.Value then
+                    if not self._activeReloadSequence or #self._activeReloadSequence == 0 then
+                        if self._characterObject and self._characterObject.thread then
+                            self._characterObject.thread:clear()
+                            self._characterObject.animating = false
+                            self._characterObject.reloading = false
+                            self._canShoot = true
+                            if self._chamberState then
+                                self._chamberState:setState("chambered", tick())
+                            end
+                            if self._reloadSpring then
+                                self._reloadSpring.t = 0
+                            end
+                        end
+                    end
+                end
+                return ret
+            end
+        end
+
+        local orig_getFiremode = cacheHook(FirearmObject, "getFiremode")
+        if orig_getFiremode then
+            FirearmObject.getFiremode = function(self, ...)
+                if Toggles.gunmod_fullauto and Toggles.gunmod_fullauto.Value then
+                    return true
+                end
+                return orig_getFiremode(self, ...)
+            end
+        end
+
+        local orig_getActiveAimStat = cacheHook(FirearmObject, "getActiveAimStat")
+        if orig_getActiveAimStat then
+            FirearmObject.getActiveAimStat = function(self, statName, ...)
+                if Toggles.gunmod_blackscope and Toggles.gunmod_blackscope.Value and statName == "blackscope" then
+                    return false
+                end
+                return orig_getActiveAimStat(self, statName, ...)
+            end
+        end
+
+        local orig_step = cacheHook(FirearmObject, "step")
+        if orig_step then
             FirearmObject.step = function(self, dt, ...)
                 if self._translationSprings then
                     local transMt = getmetatable(self._translationSprings)
@@ -1150,21 +1553,243 @@ local function setupModuleHooks()
                     setmetatable(proxy, mt)
                     self._recoilParameters = proxy
                 end
-                return oldStep(self, dt, ...)
+                return orig_step(self, dt, ...)
             end
         end
     end
+
+    if MeleeObject then
+        local orig_meleeGetWeaponStat = cacheHook(MeleeObject, "getWeaponStat")
+        if orig_meleeGetWeaponStat then
+            MeleeObject.getWeaponStat = function(self, statName)
+                if statName == "equiptime" and Toggles.gunmod_instantequip and Toggles.gunmod_instantequip.Value then
+                    return 0.01
+                end
+                return orig_meleeGetWeaponStat(self, statName)
+            end
+        end
+    end
+
+    if CharacterObject then
+        local orig_getWalkValues = cacheHook(CharacterObject, "getWalkValues")
+        if orig_getWalkValues then
+            local activeCharObj = nil
+            CharacterObject.getWalkValues = function(self, ...)
+                activeCharObj = self
+                return orig_getWalkValues(self, ...)
+            end
+            
+            pcall(function()
+                if activeCharObj then
+                    if Toggles.auto_jump and Toggles.auto_jump.Value and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                        if type(activeCharObj.jump) == "function" then
+                            activeCharObj:jump(true)
+                        end
+                    end
+                    if Toggles.speed_modifier_en and Toggles.speed_modifier_en.Value and Options.speed_modifier then
+                        if activeCharObj._baseWalkSpeed ~= Options.speed_modifier.Value then
+                            if type(activeCharObj.setBaseWalkSpeed) == "function" then
+                                activeCharObj:setBaseWalkSpeed(Options.speed_modifier.Value)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+
+        local orig_canJump = cacheHook(CharacterObject, "canJump")
+        if orig_canJump then
+            CharacterObject.canJump = function(self, ...)
+                if Toggles.no_jump_cooldown and Toggles.no_jump_cooldown.Value then
+                    return true
+                end
+                return orig_canJump(self, ...)
+            end
+        end
+    end
+
+    if network and rawget(network, "send") then
+        local orig_send = cacheHook(network, "send")
+        if orig_send then
+            if setreadonly then pcall(setreadonly, network, false) end
+            network.send = function(self, name, ...)
+                local args = {...}
+                local argCount = select("#", ...)
+                
+                if name == "falldamage" and Toggles.no_fall_damage and Toggles.no_fall_damage.Value then
+                    return
+                end
+                
+                if name == "knifehit" and Toggles.always_headshot and Toggles.always_headshot.Value then
+                    if args[2] and type(args[2]) == "string" then
+                        args[2] = "Head"
+                    end
+                end
+                
+                if name == "newbullets" and Toggles.silent_aim and Toggles.silent_aim.Value then
+                    local silentOrigin
+                    if Options.silent_origin.Value == 'Center' then
+                        local viewDim = workspace.CurrentCamera.ViewportSize
+                        silentOrigin = Vector2.new(viewDim.X / 2, viewDim.Y / 2)
+                    else
+                        local mLoc = UserInputService:GetMouseLocation()
+                        silentOrigin = Vector2.new(mLoc.X, mLoc.Y)
+                    end
+                    
+                    local currentTick = tick()
+                    if not _G.SilentTick or (currentTick - _G.SilentTick) > 0.05 then
+                        _G.SilentTick = currentTick
+                        _G.SilentShouldHit = math.random(1, 100) <= (Options.silent_hitchance and Options.silent_hitchance.Value or 100)
+                        local sp = Options.silent_part and Options.silent_part.Value or "Head"
+                        if sp == "Random" then
+                            sp = math.random() > 0.5 and "Head" or "Torso"
+                        end
+                        _G.SilentPart = sp
+                    end
+                    
+                    local target = nil
+                    if _G.SilentShouldHit then
+                        target = getBestTarget(Options.silent_fov.Value, silentOrigin, _G.SilentPart, Toggles.silent_teamcheck.Value, Toggles.silent_visiblecheck.Value)
+                    end
+                    
+                    if target and args[2] and type(args[2]) == "table" and args[2].bullets then
+                        local char = target.Character or target
+                        local pfParts = nil
+                        if not target.Character then
+                            _, pfParts = getPhantomForcesCharacterModelRaw(target)
+                        end
+                        local headPart = getTargetPart(char, _G.SilentPart, pfParts)
+                        
+                        if headPart then
+                            local firePos = args[2].firepos
+                            
+                            local targetVelocity = zero
+                            if ReplicationInterface then
+                                pcall(function()
+                                    local entry = ReplicationInterface.getEntry(target)
+                                    if entry and entry._velspring then
+                                        targetVelocity = entry._velspring.t
+                                    end
+                                end)
+                            end
+                            
+                            local bulletAccel = PublicSettings and PublicSettings.bulletAcceleration or Vector3.new(0, -196.2, 0)
+                            local weaponSpeed = silentWeaponSpeedCache
+                            
+                            local velocity, travelTime = trajectory(firePos, bulletAccel, headPart.Position, weaponSpeed, targetVelocity)
+                            local headDir = velocity.Unit
+                            
+                            for _, bullet in pairs(args[2].bullets) do
+                                bullet[1] = headDir
+                            end
+                        end
+                    end
+                end
+                
+                if name == "bullethit" and Toggles.silent_aim and Toggles.silent_aim.Value then
+                    if silentTargetCache and silentTargetEntryCache then
+                        local targetName = silentTargetCache.Name
+                        local bodyPartName = args[2] or "Unknown"
+                        
+                        pcall(function()
+                            if bodyPartName == "Head" then
+                                bodyPartName = "Head"
+                            elseif bodyPartName == "Torso" or bodyPartName:match("Arm") or bodyPartName:match("Leg") then
+                                bodyPartName = "Body"
+                            end
+                            table.insert(_G.HitNotiQueue, {targetName = targetName, bodyPartName = bodyPartName})
+                        end)
+                    end
+                end
+                
+                return orig_send(self, name, unpack(args, 1, argCount))
+            end
+        end
+    end
+
+    if BulletInterface and rawget(BulletInterface, "new") then
+        local orig_newBullet = cacheHook(BulletInterface, "new")
+        if orig_newBullet then
+            if setreadonly then pcall(setreadonly, BulletInterface, false) end
+            BulletInterface.new = function(bulletData, ...)
+                if Toggles.silent_aim and Toggles.silent_aim.Value and type(bulletData) == "table" and bulletData.velocity then
+                    local silentOrigin
+                    if Options.silent_origin.Value == 'Center' then
+                        local viewDim = workspace.CurrentCamera.ViewportSize
+                        silentOrigin = Vector2.new(viewDim.X / 2, viewDim.Y / 2)
+                    else
+                        local mLoc = UserInputService:GetMouseLocation()
+                        silentOrigin = Vector2.new(mLoc.X, mLoc.Y)
+                    end
+                    
+                    local currentTick = tick()
+                    if not _G.SilentTick or (currentTick - _G.SilentTick) > 0.05 then
+                        _G.SilentTick = currentTick
+                        _G.SilentShouldHit = math.random(1, 100) <= (Options.silent_hitchance and Options.silent_hitchance.Value or 100)
+                        local sp = Options.silent_part and Options.silent_part.Value or "Head"
+                        if sp == "Random" then
+                            sp = math.random() > 0.5 and "Head" or "Torso"
+                        end
+                        _G.SilentPart = sp
+                    end
+
+                    local target = nil
+                    if _G.SilentShouldHit then
+                        target = getBestTarget(Options.silent_fov.Value, silentOrigin, _G.SilentPart, Toggles.silent_teamcheck.Value, Toggles.silent_visiblecheck.Value)
+                    end
+                    
+                    if target then
+                        local char = target.Character or target
+                        local pfParts = nil
+                        if not target.Character then
+                            _, pfParts = getPhantomForcesCharacterModelRaw(target)
+                        end
+                        local headPart = getTargetPart(char, _G.SilentPart, pfParts)
+                        
+                        if headPart then
+                            local targetVelocity = zero
+                            if ReplicationInterface then
+                                pcall(function()
+                                    local entry = ReplicationInterface.getEntry(target)
+                                    if entry and entry._velspring then
+                                        targetVelocity = entry._velspring.t
+                                    end
+                                end)
+                            end
+                            
+                            local bulletAccel = PublicSettings and PublicSettings.bulletAcceleration or Vector3.new(0, -196.2, 0)
+                            local weaponSpeed = bulletData.velocity.Magnitude
+                            silentWeaponSpeedCache = weaponSpeed
+                            
+                            local newVelocity, _ = trajectory(bulletData.position, bulletAccel, headPart.Position, weaponSpeed, targetVelocity)
+                            bulletData.velocity = newVelocity
+                        end
+                    end
+                end
+                return orig_newBullet(bulletData, ...)
+            end
+        end
+    end
+
 end
 task.spawn(setupModuleHooks)
+
+if Library and Library.Notify then
+    Library:Notify("PFSploit has successfully loaded!", 5)
+end
+print("PFSploit has successfully loaded!")
 ]=]
 
 local isPhantomForces = (game.PlaceId == 292439477)
 
-if isPhantomForces then
-    if not (run_on_thread or run_on_actor) then
-        game:GetService("Players").LocalPlayer:Kick("Could not load script. I'd recommend you get an executor that supports run_on_thread, It'll work, trust me.")
-        return
-    end
+if not isPhantomForces then
+    game:GetService("Players").LocalPlayer:Kick("Currently only supporting Phantom Forces")
+    return
+end
+
+if not (run_on_thread or run_on_actor) then
+    game:GetService("Players").LocalPlayer:Kick("Could not load script. I'd recommend you get an executor that supports run_on_thread, It'll work, trust me.")
+    return
 end
 
 if getactorthreads and (run_on_thread or run_on_actor) then
@@ -1177,3 +1802,4 @@ if getactorthreads and (run_on_thread or run_on_actor) then
 end
 
 loadstring(universal_esp_code)()
+print("PFSploit has successfully loaded!")
