@@ -1,5 +1,3 @@
-getgenv().key = "PFS-a8Xk2-Qm9Tz-Rv4Lp" 
-
 --[[ 
     PFSploit - Phantom Forces
     @valorr19 
@@ -8,7 +6,7 @@ getgenv().key = "PFS-a8Xk2-Qm9Tz-Rv4Lp"
     - use potassium for run_on_thread or it wont work on PF (you can also use the fastflag method if your poor)
 ]]
 
-local USE_KEY_SYSTEM = false
+local USE_KEY_SYSTEM = true
 
 if USE_KEY_SYSTEM then
     local key = getgenv().key or ""
