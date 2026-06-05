@@ -1,3 +1,33 @@
+local USE_KEY_SYSTEM = true
+
+if USE_KEY_SYSTEM then
+    local key = getgenv().key or ""
+
+    local validKeys = {}
+    local success, result = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/Vermex221/key/refs/heads/main/keys.lua"))()
+    end)
+    if success and type(result) == "table" then
+        validKeys = result
+    end
+
+    local function isKeyValid(k)
+        for _, v in ipairs(validKeys) do
+            if v == k then return true end
+        end
+        return false
+    end
+
+    if not isKeyValid(key) then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "ARSploit",
+            Text = "Wrong key!",
+            Duration = 5
+        })
+        return
+    end
+end
+
 local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
 
 local libCode = game:HttpGet(repo .. 'Library.lua')
