@@ -59,7 +59,7 @@ local Tabs = {
 local ESPTab = Tabs.ESP:AddLeftGroupbox('Box & Health ESP')
 ESPTab:AddToggle('esp_box_enabled', { Text = 'Box ESP', Default = false })
 ESPTab:AddToggle('esp_health_enabled', { Text = 'Health ESP', Default = false })
-ESPTab:AddToggle('esp_teamcheck', { Text = 'Team Check', Default = false })
+ESPTab:AddToggle('esp_teamcheck', { Text = 'Team Check (For FFA matches turn this off)', Default = false })
 ESPTab:AddLabel('Box Color'):AddColorPicker('esp_box_color', { Default = Color3.fromRGB(255, 255, 255) })
 
 local SkeletonTab = Tabs.ESP:AddRightGroupbox('Skeleton ESP')
@@ -428,8 +428,8 @@ local FrameTimer = tick()
 local FrameCounter = 0;
 local FPS = 60;
 
-local WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(function()
-table.insert(connections, WatermarkConnection)
+local WatermarkConnection
+WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(function()
     FrameCounter += 1;
 
     if (tick() - FrameTimer) >= 1 then
@@ -445,6 +445,7 @@ table.insert(connections, WatermarkConnection)
 end);
 
 Library:OnUnload(function()
+    if WatermarkConnection then WatermarkConnection:Disconnect() end
     fovCircle:Remove()
     for _, esp in pairs(espCache) do
         esp.Box:Remove()
