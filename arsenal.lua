@@ -1,3 +1,5 @@
+local connections = {}
+
 local USE_KEY_SYSTEM = true
 
 if USE_KEY_SYSTEM then
